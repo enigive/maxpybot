@@ -1,0 +1,125 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+from urllib.parse import quote
+
+from .base import BaseAPIGroup
+
+
+class ChatsAPI(BaseAPIGroup):
+    async def get_chats(self, count: Optional[int] = None, marker: Optional[int] = None) -> Any:
+        params: Dict[str, Any] = {}
+        if count is not None:
+            params["count"] = count
+        if marker is not None:
+            params["marker"] = marker
+        return await self._request_model("ChatList", "GET", "chats", params=params)
+
+    async def get_chat_by_link(self, chat_link: str) -> Any:
+        return await self._request_model("Chat", "GET", "chats/{0}".format(quote(chat_link, safe="@_-")))
+
+    async def get_chat(self, chat_id: int) -> Any:
+        return await self._request_model("Chat", "GET", "chats/{0}".format(chat_id))
+
+    async def edit_chat(self, chat_id: int, patch: Dict[str, Any]) -> Any:
+        return await self._request_model("Chat", "PATCH", "chats/{0}".format(chat_id), json_body=patch)
+
+    async def delete_chat(self, chat_id: int) -> Any:
+        return await self._request_model("SimpleQueryResult", "DELETE", "chats/{0}".format(chat_id))
+
+    async def send_action(self, chat_id: int, action: str) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "POST",
+            "chats/{0}/actions".format(chat_id),
+            json_body={"action": action},
+        )
+
+    async def get_pinned_message(self, chat_id: int) -> Any:
+        return await self._request_model("GetPinnedMessageResult", "GET", "chats/{0}/pin".format(chat_id))
+
+    async def pin_message(self, chat_id: int, body: Dict[str, Any]) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "PUT",
+            "chats/{0}/pin".format(chat_id),
+            json_body=body,
+        )
+
+    async def unpin_message(self, chat_id: int) -> Any:
+        return await self._request_model("SimpleQueryResult", "DELETE", "chats/{0}/pin".format(chat_id))
+
+    async def get_membership(self, chat_id: int) -> Any:
+        return await self._request_model("ChatMember", "GET", "chats/{0}/members/me".format(chat_id))
+
+    async def leave_chat(self, chat_id: int) -> Any:
+        return await self._request_model("SimpleQueryResult", "DELETE", "chats/{0}/members/me".format(chat_id))
+
+    async def get_admins(self, chat_id: int) -> Any:
+        return await self._request_model("ChatMembersList", "GET", "chats/{0}/members/admins".format(chat_id))
+
+    async def post_admins(self, chat_id: int, admins: Dict[str, Any]) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "POST",
+            "chats/{0}/members/admins".format(chat_id),
+            json_body=admins,
+        )
+
+    async def delete_admins(self, chat_id: int, user_id: int) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "DELETE",
+            "chats/{0}/members/admins/{1}".format(chat_id, user_id),
+        )
+
+    async def get_members(
+        self,
+        chat_id: int,
+        user_ids: Optional[List[int]] = None,
+        marker: Optional[int] = None,
+        count: Optional[int] = None,
+    ) -> Any:
+        params: Dict[str, Any] = {}
+        if user_ids:
+            params["user_ids"] = ",".join([str(user_id) for user_id in user_ids])
+        if marker is not None:
+            params["marker"] = marker
+        if count is not None:
+            params["count"] = count
+        return await self._request_model("ChatMembersList", "GET", "chats/{0}/members".format(chat_id), params=params)
+
+    async def add_members(self, chat_id: int, users_body: Dict[str, Any]) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "POST",
+            "chats/{0}/members".format(chat_id),
+            json_body=users_body,
+        )
+
+    async def remove_member(self, chat_id: int, user_id: int) -> Any:
+        return await self._request_model(
+            "SimpleQueryResult",
+            "DELETE",
+            "chats/{0}/members".format(chat_id),
+            params={"user_id": user_id},
+        )
+
+    # OpenAPI parity aliases (operationId)
+    getChats = get_chats
+    getChatByLink = get_chat_by_link
+    getChat = get_chat
+    editChat = edit_chat
+    deleteChat = delete_chat
+    sendAction = send_action
+    getPinnedMessage = get_pinned_message
+    pinMessage = pin_message
+    unpinMessage = unpin_message
+    getMembership = get_membership
+    leaveChat = leave_chat
+    getAdmins = get_admins
+    postAdmins = post_admins
+    deleteAdmins = delete_admins
+    getMembers = get_members
+    addMembers = add_members
+    removeMember = remove_member

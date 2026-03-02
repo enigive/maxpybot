@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "maxpybot"
+version = "0.1.0"
+description = "Async framework for MAX messenger bots"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+  { name = "maxpybot maintainers" }
+]
+dependencies = [
+  "aiohttp>=3.9.0,<4.0.0",
+  "pydantic>=2.0.0,<3.0.0",
+  "typing-extensions>=4.8.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "aioresponses>=0.7.8",
+  "PyYAML>=6.0.0"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["maxpybot"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "maxpybot",
+  "tools",
+  "vendor",
+  "README.md",
+  "pyproject.toml",
+  "LICENSE",
+]
