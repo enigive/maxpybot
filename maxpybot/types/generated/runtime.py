@@ -7,6 +7,10 @@ from pydantic import BaseModel
 
 
 def get_model_class(model_name: str) -> Optional[Type[BaseModel]]:
+    public_klass = _get_public_model_class(model_name)
+    if public_klass is not None:
+        return public_klass
+
     try:
         module = importlib.import_module("maxpybot.types.generated.models")
     except Exception:  # noqa: BLE001
@@ -25,3 +29,19 @@ def validate_with_model(model_name: str, payload: Any) -> Any:
         return klass.model_validate(payload)
     except Exception:  # noqa: BLE001
         return payload
+
+
+def _get_public_model_class(model_name: str) -> Optional[Type[BaseModel]]:
+    try:
+        module = importlib.import_module("maxpybot.types.models")
+    except Exception:  # noqa: BLE001
+        return None
+
+    registry = getattr(module, "PUBLIC_DTO_BY_NAME", None)
+    if not isinstance(registry, dict):
+        return None
+
+    klass = registry.get(model_name)
+    if isinstance(klass, type) and issubclass(klass, BaseModel):
+        return klass
+    return None

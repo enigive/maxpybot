@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from ..types import SubscriptionSchema, build_request_payload
 from .base import BaseAPIGroup
 
 
@@ -15,13 +16,16 @@ class SubscriptionsAPI(BaseAPIGroup):
         update_types: Optional[List[str]] = None,
         secret: str = "",
     ) -> Any:
-        body = {
-            "url": subscribe_url,
-            "update_types": update_types or [],
-            "secret": secret,
-            "version": self._transport.version,
-        }
-        return await self._request_model("SimpleQueryResult", "POST", "subscriptions", json_body=body)
+        payload = build_request_payload(
+            {
+                "url": subscribe_url,
+                "update_types": update_types or [],
+                "secret": secret,
+                "version": self._transport.version,
+            },
+            SubscriptionSchema,
+        )
+        return await self._request_model("SimpleQueryResult", "POST", "subscriptions", json_body=payload)
 
     async def unsubscribe(self, subscription_url: str) -> Any:
         return await self._request_model(

@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, List, Optional
 
 FilterCallable = Callable[[Any], Any]
 HandlerCallable = Callable[[Any], Awaitable[Any]]
+BeforeHookCallable = Callable[[Any], Any]
+AfterHookCallable = Callable[[Any, bool], Any]
+ErrorHookCallable = Callable[[Any, Exception], Any]
+ErrorHandlerCallable = Callable[[Any, Exception], Any]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,8 +26,14 @@ class Router:
     def __init__(self) -> None:
         self._handlers: List[_HandlerRecord] = []
         self._children: List["Router"] = []
+        self._parent: Optional["Router"] = None
+        self._before_hooks: List[BeforeHookCallable] = []
+        self._after_hooks: List[AfterHookCallable] = []
+        self._error_hooks: List[ErrorHookCallable] = []
+        self._error_handlers: List[ErrorHandlerCallable] = []
 
     def include_router(self, router: "Router") -> None:
+        router._parent = self
         self._children.append(router)
 
     def register(
@@ -45,21 +58,114 @@ class Router:
     def callback_query(self, *filters: FilterCallable) -> Callable[[HandlerCallable], HandlerCallable]:
         return self.on_update("message_callback", *filters)
 
+    def middleware_before(
+        self,
+        callback: Optional[BeforeHookCallable] = None,
+    ) -> Any:
+        return self._register_callback(self._before_hooks, callback)
+
+    def middleware_after(
+        self,
+        callback: Optional[AfterHookCallable] = None,
+    ) -> Any:
+        return self._register_callback(self._after_hooks, callback)
+
+    def middleware_error(
+        self,
+        callback: Optional[ErrorHookCallable] = None,
+    ) -> Any:
+        return self._register_callback(self._error_hooks, callback)
+
+    def on_error(
+        self,
+        callback: Optional[ErrorHandlerCallable] = None,
+    ) -> Any:
+        return self._register_callback(self._error_handlers, callback)
+
     async def dispatch(self, update: Any) -> bool:
         handled = False
-        for handler in self._handlers:
-            if not _match_update_type(update, handler.update_type):
-                continue
-            if not await _passes_filters(update, handler.filters):
-                continue
-            await handler.callback(update)
-            handled = True
+        try:
+            if not await self._run_before_hooks(update):
+                return False
 
-        for child in self._children:
-            child_handled = await child.dispatch(update)
-            handled = handled or child_handled
+            for handler in self._handlers:
+                if not _match_update_type(update, handler.update_type):
+                    continue
+                try:
+                    if not await _passes_filters(update, handler.filters):
+                        continue
+                    await handler.callback(update)
+                    handled = True
+                except Exception as exc:  # noqa: BLE001
+                    await self._emit_error(update, exc)
 
-        return handled
+            for child in self._children:
+                child_handled = await child.dispatch(update)
+                handled = handled or child_handled
+
+            return handled
+        finally:
+            await self._run_after_hooks(update, handled)
+
+    def _register_callback(self, store: List[Any], callback: Optional[Any]) -> Any:
+        if callback is not None:
+            store.append(callback)
+            return callback
+
+        def _decorator(func: Any) -> Any:
+            store.append(func)
+            return func
+
+        return _decorator
+
+    async def _run_before_hooks(self, update: Any) -> bool:
+        for hook in self._before_hooks:
+            try:
+                await _resolve_result(hook(update))
+            except Exception as exc:  # noqa: BLE001
+                await self._emit_error(update, exc)
+                return False
+        return True
+
+    async def _run_after_hooks(self, update: Any, handled: bool) -> None:
+        for hook in self._after_hooks:
+            try:
+                await _resolve_result(hook(update, handled))
+            except Exception as exc:  # noqa: BLE001
+                await self._emit_error(update, exc)
+
+    async def _emit_error(self, update: Any, error: Exception) -> None:
+        chain = self._iter_error_chain()
+        has_error_consumers = False
+        for router in chain:
+            has_error_consumers = has_error_consumers or bool(router._error_hooks or router._error_handlers)
+            await router._run_error_hooks(update, error)
+            await router._run_error_handlers(update, error)
+
+        if not has_error_consumers:
+            logger.exception("Unhandled dispatcher error", exc_info=error)
+
+    async def _run_error_hooks(self, update: Any, error: Exception) -> None:
+        for hook in self._error_hooks:
+            try:
+                await _resolve_result(hook(update, error))
+            except Exception:  # noqa: BLE001
+                logger.exception("Dispatcher middleware_error hook failed")
+
+    async def _run_error_handlers(self, update: Any, error: Exception) -> None:
+        for handler in self._error_handlers:
+            try:
+                await _resolve_result(handler(update, error))
+            except Exception:  # noqa: BLE001
+                logger.exception("Dispatcher on_error handler failed")
+
+    def _iter_error_chain(self) -> List["Router"]:
+        chain: List["Router"] = []
+        current: Optional["Router"] = self
+        while current is not None:
+            chain.append(current)
+            current = current._parent
+        return chain
 
 
 def _extract_update_type(update: Any) -> Optional[str]:
@@ -80,9 +186,13 @@ def _match_update_type(update: Any, expected: Optional[str]) -> bool:
 
 async def _passes_filters(update: Any, filters: List[FilterCallable]) -> bool:
     for filter_func in filters:
-        result = filter_func(update)
-        if inspect.isawaitable(result):
-            result = await result
+        result = await _resolve_result(filter_func(update))
         if not bool(result):
             return False
     return True
+
+
+async def _resolve_result(value: Any) -> Any:
+    if inspect.isawaitable(value):
+        return await value
+    return value

@@ -1,8 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import quote
 
+from ..types import (
+    ChatAdminsSchema,
+    ChatPatchSchema,
+    PinMessageSchema,
+    SendActionSchema,
+    UserIdsSchema,
+    build_request_payload,
+)
 from .base import BaseAPIGroup
 
 
@@ -21,29 +29,37 @@ class ChatsAPI(BaseAPIGroup):
     async def get_chat(self, chat_id: int) -> Any:
         return await self._request_model("Chat", "GET", "chats/{0}".format(chat_id))
 
-    async def edit_chat(self, chat_id: int, patch: Dict[str, Any]) -> Any:
-        return await self._request_model("Chat", "PATCH", "chats/{0}".format(chat_id), json_body=patch)
+    async def edit_chat(self, chat_id: int, patch: Union[Dict[str, Any], ChatPatchSchema]) -> Any:
+        body = build_request_payload(patch, ChatPatchSchema)
+        return await self._request_model("Chat", "PATCH", "chats/{0}".format(chat_id), json_body=body)
 
     async def delete_chat(self, chat_id: int) -> Any:
         return await self._request_model("SimpleQueryResult", "DELETE", "chats/{0}".format(chat_id))
 
-    async def send_action(self, chat_id: int, action: str) -> Any:
+    async def send_action(self, chat_id: int, action: Union[str, SendActionSchema]) -> Any:
+        raw_body: Union[Dict[str, Any], SendActionSchema]
+        if isinstance(action, SendActionSchema):
+            raw_body = action
+        else:
+            raw_body = {"action": action}
+        body = build_request_payload(raw_body, SendActionSchema)
         return await self._request_model(
             "SimpleQueryResult",
             "POST",
             "chats/{0}/actions".format(chat_id),
-            json_body={"action": action},
+            json_body=body,
         )
 
     async def get_pinned_message(self, chat_id: int) -> Any:
         return await self._request_model("GetPinnedMessageResult", "GET", "chats/{0}/pin".format(chat_id))
 
-    async def pin_message(self, chat_id: int, body: Dict[str, Any]) -> Any:
+    async def pin_message(self, chat_id: int, body: Union[Dict[str, Any], PinMessageSchema]) -> Any:
+        payload = build_request_payload(body, PinMessageSchema)
         return await self._request_model(
             "SimpleQueryResult",
             "PUT",
             "chats/{0}/pin".format(chat_id),
-            json_body=body,
+            json_body=payload,
         )
 
     async def unpin_message(self, chat_id: int) -> Any:
@@ -58,12 +74,13 @@ class ChatsAPI(BaseAPIGroup):
     async def get_admins(self, chat_id: int) -> Any:
         return await self._request_model("ChatMembersList", "GET", "chats/{0}/members/admins".format(chat_id))
 
-    async def post_admins(self, chat_id: int, admins: Dict[str, Any]) -> Any:
+    async def post_admins(self, chat_id: int, admins: Union[Dict[str, Any], ChatAdminsSchema]) -> Any:
+        body = build_request_payload(admins, ChatAdminsSchema)
         return await self._request_model(
             "SimpleQueryResult",
             "POST",
             "chats/{0}/members/admins".format(chat_id),
-            json_body=admins,
+            json_body=body,
         )
 
     async def delete_admins(self, chat_id: int, user_id: int) -> Any:
@@ -89,12 +106,13 @@ class ChatsAPI(BaseAPIGroup):
             params["count"] = count
         return await self._request_model("ChatMembersList", "GET", "chats/{0}/members".format(chat_id), params=params)
 
-    async def add_members(self, chat_id: int, users_body: Dict[str, Any]) -> Any:
+    async def add_members(self, chat_id: int, users_body: Union[Dict[str, Any], UserIdsSchema]) -> Any:
+        body = build_request_payload(users_body, UserIdsSchema)
         return await self._request_model(
             "SimpleQueryResult",
             "POST",
             "chats/{0}/members".format(chat_id),
-            json_body=users_body,
+            json_body=body,
         )
 
     async def remove_member(self, chat_id: int, user_id: int) -> Any:

@@ -8,7 +8,8 @@
 - [API группы и методы](api-groups.md)
 - [Апдейты и dispatcher](updates-and-dispatcher.md)
 - [Webhook и subscriptions](webhook-and-subscriptions.md)
-- [OpenAPI sync и генерация моделей](openapi-workflow.md)
+- [Публичные request-схемы](public-schemas.md)
+- [OpenAPI workflow (для разработки)](openapi-workflow.md)
 
 ## Дополнительно
 

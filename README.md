@@ -27,6 +27,14 @@ pip install ".[dev]"
 - Examples directory: `examples/`
 - Next milestones: `ROADMAP.md`
 
+## Public types
+
+```python
+from maxpybot.types import User, Chat, Message
+```
+
+Request schemas are also available from `maxpybot.types` (for example, `NewMessageSchema`).
+
 ## Quick start (polling)
 
 ```python
