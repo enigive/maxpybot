@@ -1,155 +1,150 @@
 # maxpybot
 
-Async Python framework for MAX bots with API parity-first approach.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Goals
+Асинхронный Python-фреймворк для создания ботов в мессенджере MAX. Разработан с упором на стабильность публичного API, минимализм и удобство, вдохновленное aiogram.
 
-- Match current MAX Bot API operations/types/request bodies from upstream OpenAPI.
-- Keep user-facing types stable with compatibility normalization for payload drift.
-- Provide minimal dispatcher/router/filters, long polling, and webhook handling.
+## Основные возможности
 
-## Source of truth
+- **Asyncio & aiohttp**: Полностью асинхронная архитектура.
+- **Стабильный API**: Слой совместимости (`compat/`) защищает ваш код от изменений в MAX API.
+- **Типизация**: Строгая типизация с использованием Pydantic v2.
+- **Dispatcher & Router**: Гибкая система роутинга событий и мощные фильтры.
+- **FSM**: Встроенная машина состояний (Finite State Machine) с поддержкой Memory и Redis.
+- **Поддержка Python 3.8+**: Работает на стабильных версиях Python.
 
-- Upstream Go SDK and schema: <https://github.com/max-messenger/max-bot-api-client-go>
-- Synced OpenAPI file in this repo: `vendor/max_bot_api/schema.yaml`
-
-## Install
+## Установка
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install ".[dev]"
+pip install maxpybot
 ```
 
-## Docs and examples
-
-- Documentation index: `docs/README.md`
-- Cookbook: `docs/cookbook.md`
-- Migration guide: `MIGRATION.md`
-- Release checklist: `docs/release-checklist.md`
-- Changelog: `CHANGELOG.md`
-- Examples directory: `examples/`
-- Next milestones: `ROADMAP.md`
-
-## Public types
-
-```python
-from maxpybot.types import User, Chat, Message
+Для использования Redis в FSM:
+```bash
+pip install "maxpybot[redis]"
 ```
 
-Request schemas are also available from `maxpybot.types` (for example, `NewMessageSchema`).
+## Быстрый старт (Polling)
 
-## FSM and storage
-
-```python
-from maxpybot.fsm import FSMContext, MemoryStorage
-```
-
-Available adapters:
-
-- `MemoryStorage` (built-in)
-- `RedisStorage` (optional, requires `redis` package)
-
-## Quick start (polling)
+Самый простой способ запустить бота — использовать Long Polling.
 
 ```python
 import asyncio
-
 from maxpybot import MaxBot
-from maxpybot.dispatcher import Dispatcher, F
-from maxpybot.dispatcher.router import Router
+from maxpybot.dispatcher import Dispatcher, Router, F
 from maxpybot.types import Message
 
+# Инициализация бота и диспетчера
+bot = MaxBot("YOUR_BOT_TOKEN")
+dp = Dispatcher()
+router = Router()
 
-async def main() -> None:
-    bot = MaxBot("YOUR_BOT_TOKEN")
-    dp = Dispatcher()
-    router = Router()
+@router.message(F.text == "/start")
+async def cmd_start(message: Message):
+    await message.answer("Привет! Я бот на maxpybot 🚀")
 
-    @router.message(F.text)
-    async def on_text(message: Message) -> None:
-        await message.answer(text="Hello from maxpybot")
+@router.message(F.text)
+async def echo_message(message: Message):
+    await message.answer(f"Вы написали: {message.text}")
 
+async def main():
     dp.include_router(router)
+    print("Бот запущен...")
     await dp.start_polling(bot)
 
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-## Quick start (webhook, aiohttp)
+## Работа с Webhooks
+
+Для высоконагруженных ботов рекомендуется использовать Webhooks. `maxpybot` предоставляет встроенную поддержку серверов на базе `aiohttp`.
 
 ```python
 from maxpybot import MaxBot
-from maxpybot.dispatcher.router import Router
-from maxpybot.dispatcher.webhook import WebhookMetrics
-from maxpybot.types import Message
+from maxpybot.dispatcher import Router, create_webhook_app
+from aiohttp import web
 
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = "https://bot.example.com/webhook"
-WEBHOOK_SECRET = "CHANGE_ME"
-ALLOWED_IP_NETWORKS = ["203.0.113.0/24"]
-WEBHOOK_METRICS = WebhookMetrics()
+bot = MaxBot("YOUR_BOT_TOKEN")
+router = Router()
 
+@router.message()
+async def handle_any(message):
+    await message.answer("Получено через Webhook!")
 
-def run_webhook_server() -> None:
-    bot = MaxBot("YOUR_BOT_TOKEN")
-    router = Router()
-    
-    @router.message_created()
-    async def on_message(message: Message) -> None:
-        await message.answer(text="Webhook is active")
+# Создание aiohttp приложения
+app = create_webhook_app(
+    bot=bot,
+    router=router,
+    path="/webhook",
+    secret="SUPER_SECRET_TOKEN"
+)
 
-    bot.start_webhook(
-        router=router,
-        path=WEBHOOK_PATH,
-        host="127.0.0.1",
-        port=8443,
-        cert_path="cert.pem",
-        key_path="key.pem",
-        secret=WEBHOOK_SECRET,
-        allowed_ip_networks=ALLOWED_IP_NETWORKS,
-        max_processing_retries=2,
-        metrics=WEBHOOK_METRICS,
-        subscribe_url=WEBHOOK_URL,
-        unsubscribe_on_shutdown=True,
-    )
+if __name__ == "__main__":
+    web.run_app(app, host="0.0.0.0", port=8080)
 ```
 
-## Deep links and start payload
+## Машина состояний (FSM)
+
+Управляйте сложными диалогами с помощью состояний.
 
 ```python
-from maxpybot.dispatcher import F
-from maxpybot.dispatcher.router import Router
-from maxpybot.types import BotStartedUpdate, Message
+from maxpybot.fsm import FSMContext
+from maxpybot.dispatcher import F, Router
+from maxpybot.types import Message
 
 router = Router()
 
+@router.message(F.text == "/feedback")
+async def start_feedback(message: Message, state: FSMContext):
+    await state.set_state("waiting_for_name")
+    await message.answer("Как вас зовут?")
 
-@router.bot_started(F.start_payload == "promo_summer2025")
-async def on_started(update: BotStartedUpdate) -> None:
-    print(update.start_payload)  # -> "promo_summer2025"
+@router.message(F.state == "waiting_for_name")
+async def process_name(message: Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await state.set_state("waiting_for_comment")
+    await message.answer(f"Приятно познакомиться, {message.text}! Что вы думаете о нас?")
 
-
-@router.message_created(F.start_payload == "ref_user456789")
-async def on_start_message(message: Message) -> None:
-    print(message.start_payload)  # -> "ref_user456789" for "/start ref_user456789"
+@router.message(F.state == "waiting_for_comment")
+async def process_comment(message: Message, state: FSMContext):
+    data = await state.get_data()
+    await message.answer(f"Спасибо за отзыв, {data['name']}!")
+    await state.clear()
 ```
 
-## OpenAPI sync and model generation
+## Клавиатуры
 
-```bash
-python tools/sync_max_openapi.py
-python tools/generate_models.py
+`maxpybot` поддерживает как Inline, так и Reply клавиатуры.
+
+```python
+from maxpybot.types import InlineKeyboard, InlineCallbackButton
+
+kb = InlineKeyboard(buttons=[
+    [InlineCallbackButton(text="Нажми меня", payload="btn_pressed")]
+])
+
+await message.answer("Выберите опцию:", reply_markup=kb)
 ```
 
-Generated artifacts:
+## Документация и примеры
 
-- `maxpybot/types/generated/models.py`
-- `maxpybot/types/generated/openapi_meta.py`
+- [Примеры кода](examples/) — готовые примеры для разных сценариев.
+- [Руководство по отправке сообщений](docs/sending-messages.md)
+- [Webhook и подписки](docs/webhook-and-subscriptions.md)
+- [Миграция](MIGRATION.md)
 
-## Test
+## Разработка
 
-```bash
-.venv/bin/pytest
-```
+Если вы хотите внести вклад в развитие библиотеки:
+
+1. Клонируйте репозиторий.
+2. Установите зависимости для разработки: `pip install -e ".[dev]"`.
+3. Запустите тесты: `pytest`.
+
+Библиотека придерживается строгих правил совместимости с MAX API. Все изменения в API мессенджера нормализуются в слое `compat/`, чтобы ваш код продолжал работать без правок.
+
+## Лицензия
+
+Проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
