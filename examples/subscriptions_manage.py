@@ -1,7 +1,7 @@
 import asyncio
 from typing import List
 
-from maxpybot import MaxBotAPI
+from maxpybot import MaxBot
 
 BOT_TOKEN = "YOUR_BOT_TOKEN"
 WEBHOOK_URL = "https://bot.example.com/webhook"
@@ -26,9 +26,10 @@ UPDATE_TYPES: List[str] = [
 
 
 async def main() -> None:
-    async with MaxBotAPI(BOT_TOKEN) as api:
+    bot = MaxBot(BOT_TOKEN)
+    async with bot:
         print("Create/refresh webhook subscription...")
-        result = await api.subscriptions.subscribe(
+        result = await bot.subscribe_webhook(
             subscribe_url=WEBHOOK_URL,
             update_types=UPDATE_TYPES,
             secret="CHANGE_ME",
@@ -36,15 +37,15 @@ async def main() -> None:
         print(result)
 
         print("Current subscriptions...")
-        subscriptions = await api.subscriptions.get_subscriptions()
+        subscriptions = await bot.subscriptions.get_subscriptions()
         print(subscriptions)
 
         print("Unsubscribe one webhook...")
-        single = await api.subscriptions.unsubscribe(WEBHOOK_URL)
+        single = await bot.unsubscribe_webhook(WEBHOOK_URL)
         print(single)
 
         print("Unsubscribe all webhooks...")
-        all_removed = await api.subscriptions.unsubscribe_all()
+        all_removed = await bot.unsubscribe_all_webhooks()
         print(all_removed)
 
 

@@ -1,11 +1,8 @@
-import ssl
 from typing import List
 
-from aiohttp import web
-
-from maxpybot import MaxBotAPI
+from maxpybot import MaxBot
 from maxpybot.dispatcher.router import Router
-from maxpybot.dispatcher.webhook import WebhookHandler
+from maxpybot.types import Message
 
 BOT_TOKEN = "YOUR_BOT_TOKEN"
 WEBHOOK_URL = "https://bot.example.com/webhook"
@@ -32,31 +29,28 @@ UPDATE_TYPES: List[str] = [
 
 
 def main() -> None:
-    api = MaxBotAPI(BOT_TOKEN)
+    bot = MaxBot(BOT_TOKEN)
     router = Router()
-    handler = WebhookHandler(router)
 
-    app = web.Application()
-    app.router.add_post(WEBHOOK_PATH, handler.handle)
-
-    async def on_startup(_: web.Application) -> None:
-        await api.subscriptions.subscribe(
-            subscribe_url=WEBHOOK_URL,
-            update_types=UPDATE_TYPES,
-            secret=WEBHOOK_SECRET,
+    @router.message_created()
+    async def on_message(message: Message) -> None:
+        await bot.messages.send_message(
+            chat_id=message.chat.chat_id,
+            body={"text": "Webhook is active"},
         )
 
-    async def on_cleanup(_: web.Application) -> None:
-        await api.subscriptions.unsubscribe(WEBHOOK_URL)
-        await api.close()
-
-    app.on_startup.append(on_startup)
-    app.on_cleanup.append(on_cleanup)
-
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain("cert.pem", "key.pem")
-
-    web.run_app(app, host="127.0.0.1", port=8443, ssl_context=ssl_context)
+    bot.start_webhook(
+        router=router,
+        path=WEBHOOK_PATH,
+        host="127.0.0.1",
+        port=8443,
+        cert_path="cert.pem",
+        key_path="key.pem",
+        secret=WEBHOOK_SECRET,
+        subscribe_url=WEBHOOK_URL,
+        update_types=UPDATE_TYPES,
+        unsubscribe_on_shutdown=True,
+    )
 
 
 if __name__ == "__main__":

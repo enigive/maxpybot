@@ -8,17 +8,18 @@ python3 -m venv .venv
 pip install ".[dev]"
 ```
 
-## Создание клиента
+## Создание бота
 
 ```python
 import asyncio
 
-from maxpybot import MaxBotAPI
+from maxpybot import MaxBot
 
 
 async def main() -> None:
-    async with MaxBotAPI("YOUR_BOT_TOKEN") as api:
-        me = await api.bots.get_my_info()
+    bot = MaxBot("YOUR_BOT_TOKEN")
+    async with bot:
+        me = await bot.bots.get_my_info()
         print(me)
 
 
@@ -30,13 +31,34 @@ asyncio.run(main())
 ```python
 import asyncio
 
-from maxpybot import MaxBotAPI
+from maxpybot import MaxBot
+from maxpybot.dispatcher import Dispatcher, F
+from maxpybot.dispatcher.router import Router
+from maxpybot.types import Message
 
 
 async def main() -> None:
-    async with MaxBotAPI("YOUR_BOT_TOKEN") as api:
-        async for update in api.iter_updates():
-            print(update)
+    bot = MaxBot("YOUR_BOT_TOKEN")
+    dp = Dispatcher()
+
+    text_router = Router()
+    media_router = Router()
+
+    @text_router.message(F.text)
+    async def on_text(message: Message) -> None:
+        print("Text:", message.body.text)
+
+    @media_router.message(F.sticker)
+    async def on_sticker(message: Message) -> None:
+        print("Sticker in chat:", message.chat.chat_id)
+
+    @media_router.message(F.video)
+    async def on_video(message: Message) -> None:
+        print("Video in chat:", message.chat.chat_id)
+
+    dp.include_routers(text_router, media_router)
+
+    await dp.start_polling(bot, types=["message_created"])
 
 
 asyncio.run(main())
@@ -47,12 +69,13 @@ asyncio.run(main())
 ```python
 import asyncio
 
-from maxpybot import MaxBotAPI
+from maxpybot import MaxBot
 
 
 async def main() -> None:
-    async with MaxBotAPI("YOUR_BOT_TOKEN") as api:
-        await api.messages.send_message(
+    bot = MaxBot("YOUR_BOT_TOKEN")
+    async with bot:
+        await bot.messages.send_message(
             body={"text": "hello from maxpybot"},
             chat_id=1234567890,
         )

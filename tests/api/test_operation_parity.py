@@ -3,7 +3,7 @@ from maxpybot.api.chats import ChatsAPI
 from maxpybot.api.messages import MessagesAPI
 from maxpybot.api.subscriptions import SubscriptionsAPI
 from maxpybot.api.uploads import UploadsAPI
-from maxpybot.api_client import MaxBotAPI
+from maxpybot.api_client import MaxBot
 from maxpybot.types.generated.openapi_meta import OPERATION_DEFINITIONS, OPERATION_IDS
 
 
@@ -13,7 +13,7 @@ def test_operation_id_coverage() -> None:
     missing = []
     for operation_id in OPERATION_IDS:
         if operation_id == "getUpdates":
-            if not hasattr(MaxBotAPI, operation_id):
+            if not hasattr(MaxBot, operation_id):
                 missing.append(operation_id)
             continue
         if not any(hasattr(cls, operation_id) for cls in classes):

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from ..types.generated.runtime import validate_with_model
+from ..types.generated.runtime import get_model_class, validate_with_model
 from .attachments import normalize_message_attachments
+from .capabilities import detect_payload_capabilities, supported_capabilities
 from .normalizer import normalize_payload
 
 
@@ -39,12 +40,11 @@ UPDATE_MODEL_BY_TYPE = {
     "bot_started": "BotStartedUpdate",
     "chat_title_changed": "ChatTitleChangedUpdate",
     "message_chat_created": "MessageChatCreatedUpdate",
-    # Backward-compatible aliases observed in previous MAX API payloads.
-    "bot_stopped": "Update",
-    "dialog_muted": "Update",
-    "dialog_unmuted": "Update",
-    "dialog_removed": "Update",
-    "dialog_cleared": "Update",
+    "bot_stopped": "BotStoppedUpdate",
+    "dialog_muted": "DialogMutedUpdate",
+    "dialog_unmuted": "DialogUnmutedUpdate",
+    "dialog_removed": "DialogRemovedUpdate",
+    "dialog_cleared": "DialogClearedUpdate",
 }
 
 
@@ -65,7 +65,53 @@ class UpdateParser:
         if self._debug:
             normalized["debug_raw"] = raw_update
 
+        capabilities = detect_payload_capabilities(update_type, normalized)
+        if capabilities:
+            normalized["compat_capabilities"] = capabilities
+        supported = supported_capabilities(update_type)
+        if supported:
+            normalized["compat_supported_capabilities"] = list(supported)
+
         model_name = UPDATE_MODEL_BY_TYPE.get(update_type)
         if not model_name:
-            return normalized
-        return validate_with_model(model_name, normalized)
+            return _build_unknown_update(
+                normalized,
+                "unsupported update_type: {0}".format(update_type or "<empty>"),
+            )
+
+        parsed, parse_error = _parse_with_model(model_name, normalized)
+        if parsed is None:
+            return _build_unknown_update(normalized, parse_error or "validation failed")
+
+        if update_type == "message_callback":
+            _bind_callback_message(parsed)
+        return parsed
+
+
+def _parse_with_model(model_name: str, payload: Dict[str, Any]) -> Any:
+    klass = get_model_class(model_name)
+    if klass is None:
+        return None, "model not found: {0}".format(model_name)
+    try:
+        return klass.model_validate(payload), None
+    except Exception as exc:  # noqa: BLE001
+        return None, str(exc)
+
+
+def _build_unknown_update(payload: Dict[str, Any], parse_error: str) -> Any:
+    unknown_payload = dict(payload)
+    unknown_payload["parse_error"] = parse_error
+    return validate_with_model("UnknownUpdate", unknown_payload)
+
+
+def _bind_callback_message(update: Any) -> None:
+    callback = getattr(update, "callback", None)
+    message = getattr(update, "message", None)
+    if callback is None:
+        return
+    if getattr(callback, "message", None) is not None:
+        return
+    try:
+        callback.message = message
+    except Exception:  # noqa: BLE001
+        return

@@ -3,14 +3,14 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, List, Optional
 
-from ..api_client import MaxBotAPI
+from ..api_client import MaxBot
 from .router import Router
 
 LifecycleHookCallable = Callable[[], Any]
 
 
 class PollingRunner:
-    def __init__(self, api: MaxBotAPI, router: Router) -> None:
+    def __init__(self, api: MaxBot, router: Router) -> None:
         self._api = api
         self._router = router
         self._running = False

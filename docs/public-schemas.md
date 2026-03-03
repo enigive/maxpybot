@@ -25,15 +25,15 @@ from maxpybot.types import User, Chat, Message
 
 ## Где используются схемы
 
-- `BotPatchSchema` → `api.bots.edit_my_info(...)`
-- `ChatPatchSchema` → `api.chats.edit_chat(...)`
-- `SendActionSchema` → `api.chats.send_action(...)`
-- `PinMessageSchema` → `api.chats.pin_message(...)`
-- `ChatAdminsSchema` → `api.chats.post_admins(...)`
-- `UserIdsSchema` → `api.chats.add_members(...)`
-- `NewMessageSchema` → `api.messages.send_message(...)`, `api.messages.edit_message(...)`
-- `CallbackAnswerSchema` → `api.messages.answer_on_callback(...)`
-- `SubscriptionSchema` → внутренне используется в `api.subscriptions.subscribe(...)`
+- `BotPatchSchema` → `bot.bots.edit_my_info(...)`
+- `ChatPatchSchema` → `bot.chats.edit_chat(...)`
+- `SendActionSchema` → `bot.chats.send_action(...)`
+- `PinMessageSchema` → `bot.chats.pin_message(...)`
+- `ChatAdminsSchema` → `bot.chats.post_admins(...)`
+- `UserIdsSchema` → `bot.chats.add_members(...)`
+- `NewMessageSchema` → `bot.messages.send_message(...)`, `bot.messages.edit_message(...)`
+- `CallbackAnswerSchema` → `bot.messages.answer_on_callback(...)`
+- `SubscriptionSchema` → внутренне используется в `bot.subscriptions.subscribe(...)`
 
 ## Пример
 
@@ -47,7 +47,7 @@ body = NewMessageSchema(
     attachments=[AttachmentRequest(type="image")],
 )
 
-await api.messages.send_message(body=body, chat_id=123)
+await bot.messages.send_message(body=body, chat_id=123)
 ```
 
 ## Обратная совместимость

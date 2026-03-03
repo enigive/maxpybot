@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple, Type
+from enum import Enum
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 from .base import MaxBaseModel
 from .generated.models import (
+    Callback as _Callback,
     BotAddedToChatUpdate as _BotAddedToChatUpdate,
     BotInfo as _BotInfo,
     BotRemovedFromChatUpdate as _BotRemovedFromChatUpdate,
@@ -16,6 +18,7 @@ from .generated.models import (
     GetPinnedMessageResult as _GetPinnedMessageResult,
     GetSubscriptionsResult as _GetSubscriptionsResult,
     Message as _Message,
+    MessageBody as _MessageBody,
     MessageCallbackUpdate as _MessageCallbackUpdate,
     MessageChatCreatedUpdate as _MessageChatCreatedUpdate,
     MessageCreatedUpdate as _MessageCreatedUpdate,
@@ -23,6 +26,7 @@ from .generated.models import (
     MessageList as _MessageList,
     MessageRemovedUpdate as _MessageRemovedUpdate,
     PhotoTokens as _PhotoTokens,
+    Recipient as _Recipient,
     SendMessageResult as _SendMessageResult,
     SimpleQueryResult as _SimpleQueryResult,
     Subscription as _Subscription,
@@ -40,12 +44,103 @@ class User(_User):
     """Public user DTO."""
 
 
+class AttachmentType(str, Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+    AUDIO = "audio"
+    FILE = "file"
+    STICKER = "sticker"
+    CONTACT = "contact"
+    INLINE_KEYBOARD = "inline_keyboard"
+    SHARE = "share"
+    LOCATION = "location"
+
+
+class ChatIcon(MaxBaseModel):
+    url: Optional[str] = None
+
+
+class MessageSender(MaxBaseModel):
+    user_id: Optional[int] = None
+    name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    is_bot: Optional[bool] = None
+    last_activity_time: Optional[int] = None
+
+
+class MessageStat(MaxBaseModel):
+    views: Optional[int] = None
+
+
+class MessageLink(MaxBaseModel):
+    chat_id: Optional[int] = None
+    message: Optional[Union["Message", "MessageLink"]] = None
+    sender: Optional[MessageSender] = None
+    type: Optional[str] = None
+
+
 class Chat(_Chat):
     """Public chat DTO."""
+
+    dialog_with_user: Optional[Union[User, MessageSender]] = None
+    icon: Optional[ChatIcon] = None
+    participants: Optional[Dict[str, object]] = None
+    pinned_message: Optional[Union["Message", MessageLink]] = None
+    status: str
+    type: str
+
+
+class Recipient(_Recipient):
+    chat_type: str
+
+
+class MessageBody(_MessageBody):
+    pass
 
 
 class Message(_Message):
     """Public message DTO."""
+
+    body: MessageBody
+    link: Optional[MessageLink] = None
+    recipient: Recipient
+    sender: Optional[MessageSender] = None
+    stat: Optional[MessageStat] = None
+
+    @property
+    def chat(self) -> Recipient:
+        return self.recipient
+
+    @property
+    def start_payload(self) -> Optional[str]:
+        text = str(getattr(self.body, "text", "") or "").strip()
+        if not text:
+            return None
+
+        parts = text.split(None, 1)
+        command = parts[0]
+        if command != "/start" and not command.startswith("/start@"):
+            return None
+        if len(parts) < 2:
+            return None
+
+        payload = parts[1].strip()
+        if not payload:
+            return None
+        return payload
+
+
+class Callback(_Callback):
+    user: User
+    message: Optional["Message"] = None
+
+    @property
+    def chat(self) -> Optional[Recipient]:
+        if self.message is None:
+            return None
+        return self.message.chat
 
 
 class BotInfo(_BotInfo):
@@ -57,7 +152,7 @@ class ChatList(_ChatList):
 
 
 class ChatMember(_ChatMember):
-    pass
+    permissions: List[str]
 
 
 class ChatMembersList(_ChatMembersList):
@@ -65,7 +160,7 @@ class ChatMembersList(_ChatMembersList):
 
 
 class GetPinnedMessageResult(_GetPinnedMessageResult):
-    pass
+    message: Optional[Union[Message, MessageLink]] = None
 
 
 class MessageList(_MessageList):
@@ -97,11 +192,12 @@ class UploadedInfo(_UploadedInfo):
 
 
 class PhotoTokens(_PhotoTokens):
-    pass
+    photos: Dict[str, object]
 
 
 class VideoAttachmentDetails(_VideoAttachmentDetails):
-    pass
+    thumbnail: Optional[Union[Dict[str, object], str]] = None
+    urls: Optional[Dict[str, object]] = None
 
 
 class Update(_Update):
@@ -109,11 +205,12 @@ class Update(_Update):
 
 
 class MessageCallbackUpdate(_MessageCallbackUpdate):
-    pass
+    callback: Callback
+    message: Optional[Message]
 
 
 class MessageCreatedUpdate(_MessageCreatedUpdate):
-    pass
+    message: Message
 
 
 class MessageRemovedUpdate(_MessageRemovedUpdate):
@@ -121,41 +218,93 @@ class MessageRemovedUpdate(_MessageRemovedUpdate):
 
 
 class MessageEditedUpdate(_MessageEditedUpdate):
-    pass
+    message: Message
 
 
 class BotAddedToChatUpdate(_BotAddedToChatUpdate):
-    pass
+    user: User
 
 
 class BotRemovedFromChatUpdate(_BotRemovedFromChatUpdate):
-    pass
+    user: User
 
 
 class UserAddedToChatUpdate(_UserAddedToChatUpdate):
-    pass
+    user: User
 
 
 class UserRemovedFromChatUpdate(_UserRemovedFromChatUpdate):
-    pass
+    user: User
 
 
 class BotStartedUpdate(_BotStartedUpdate):
-    pass
+    user: User
+
+    @property
+    def start_payload(self) -> Optional[str]:
+        payload = getattr(self, "payload", None)
+        if payload is None:
+            return None
+        payload_text = str(payload).strip()
+        if not payload_text:
+            return None
+        return payload_text
 
 
 class ChatTitleChangedUpdate(_ChatTitleChangedUpdate):
-    pass
+    user: User
 
 
 class MessageChatCreatedUpdate(_MessageChatCreatedUpdate):
+    chat: Chat
+
+
+class DialogLifecycleUpdate(MaxBaseModel):
+    chat_id: Optional[int] = None
+    timestamp: int
+    update_type: str
+    user: Optional[User] = None
+    user_locale: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+class BotStoppedUpdate(DialogLifecycleUpdate):
     pass
+
+
+class DialogMutedUpdate(DialogLifecycleUpdate):
+    pass
+
+
+class DialogUnmutedUpdate(DialogLifecycleUpdate):
+    pass
+
+
+class DialogClearedUpdate(DialogLifecycleUpdate):
+    pass
+
+
+class DialogRemovedUpdate(DialogLifecycleUpdate):
+    pass
+
+
+class UnknownUpdate(MaxBaseModel):
+    update_type: Optional[str] = None
+    timestamp: Optional[int] = None
+    parse_error: Optional[str] = None
 
 
 _PUBLIC_DTO_CLASSES: Tuple[Type[MaxBaseModel], ...] = (
     User,
+    ChatIcon,
+    MessageSender,
+    MessageStat,
+    MessageLink,
     Chat,
+    Recipient,
+    MessageBody,
     Message,
+    Callback,
     BotInfo,
     ChatList,
     ChatMember,
@@ -182,6 +331,13 @@ _PUBLIC_DTO_CLASSES: Tuple[Type[MaxBaseModel], ...] = (
     BotStartedUpdate,
     ChatTitleChangedUpdate,
     MessageChatCreatedUpdate,
+    DialogLifecycleUpdate,
+    BotStoppedUpdate,
+    DialogMutedUpdate,
+    DialogUnmutedUpdate,
+    DialogClearedUpdate,
+    DialogRemovedUpdate,
+    UnknownUpdate,
 )
 
 PUBLIC_DTO_BY_NAME: Dict[str, Type[MaxBaseModel]] = {

@@ -1,4 +1,4 @@
-from .api_client import MaxBotAPI
+from .api_client import MaxBot
 from .exceptions import (
     APIError,
     EmptyTokenError,
@@ -10,7 +10,7 @@ from .exceptions import (
 )
 
 __all__ = [
-    "MaxBotAPI",
+    "MaxBot",
     "MaxPyBotError",
     "EmptyTokenError",
     "InvalidURLError",

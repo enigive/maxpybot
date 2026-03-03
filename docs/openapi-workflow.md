@@ -5,7 +5,7 @@
 
 ## Источник
 
-- Upstream: `max-messenger/max-bot-api-client-go`
+- Upstream Go SDK: `max-messenger/max-bot-api-client-go`
 - Файл схемы: `schemes/schema.yaml`
 
 ## Dev-процесс

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Dict, List, Optional
 
 from .api.bots import BotsAPI
 from .api.chats import ChatsAPI
@@ -20,10 +20,16 @@ from .constants import (
 from .exceptions import EmptyTokenError, TimeoutError
 from .transport.client import TransportClient
 
+if TYPE_CHECKING:
+    from aiohttp import web
+
+    from .dispatcher.router import Router
+    from .dispatcher.webhook import WebhookMetrics
+
 UpdateHandler = Callable[[Any], None]
 
 
-class MaxBotAPI:
+class MaxBot:
     """Main API client entrypoint."""
 
     def __init__(
@@ -70,7 +76,7 @@ class MaxBotAPI:
         self.Subscriptions = self.subscriptions
         self.Uploads = self.uploads
 
-    async def __aenter__(self) -> "MaxBotAPI":
+    async def __aenter__(self) -> "MaxBot":
         await self._transport.open()
         return self
 
@@ -137,6 +143,112 @@ class MaxBotAPI:
 
             if not raw_updates:
                 await asyncio.sleep(self.pause_seconds)
+
+    async def start_polling(
+        self,
+        router: "Router",
+        marker: Optional[int] = None,
+        types: Optional[List[str]] = None,
+    ) -> None:
+        from .dispatcher.polling import PollingRunner
+
+        runner = PollingRunner(api=self, router=router)
+        async with self:
+            await runner.run(marker=marker, types=types)
+
+    def create_webhook_app(
+        self,
+        router: "Router",
+        path: str,
+        secret: str = "",
+        secret_header: str = "X-Max-Bot-Api-Secret",
+        allowed_ip_networks: Optional[List[str]] = None,
+        max_processing_retries: int = 0,
+        metrics: Optional["WebhookMetrics"] = None,
+    ) -> "web.Application":
+        from .dispatcher.webhook import create_webhook_app
+
+        return create_webhook_app(
+            router=router,
+            path=path,
+            secret=secret,
+            secret_header=secret_header,
+            allowed_ip_networks=allowed_ip_networks,
+            max_processing_retries=max_processing_retries,
+            metrics=metrics,
+        )
+
+    async def subscribe_webhook(
+        self,
+        subscribe_url: str,
+        update_types: Optional[List[str]] = None,
+        secret: str = "",
+    ) -> Any:
+        return await self.subscriptions.subscribe(
+            subscribe_url=subscribe_url,
+            update_types=update_types,
+            secret=secret,
+        )
+
+    async def unsubscribe_webhook(self, subscription_url: str) -> Any:
+        return await self.subscriptions.unsubscribe(subscription_url)
+
+    async def unsubscribe_all_webhooks(self) -> Any:
+        return await self.subscriptions.unsubscribe_all()
+
+    def start_webhook(
+        self,
+        router: "Router",
+        path: str,
+        host: str = "127.0.0.1",
+        port: int = 8443,
+        cert_path: str = "",
+        key_path: str = "",
+        secret: str = "",
+        secret_header: str = "X-Max-Bot-Api-Secret",
+        allowed_ip_networks: Optional[List[str]] = None,
+        max_processing_retries: int = 0,
+        metrics: Optional["WebhookMetrics"] = None,
+        subscribe_url: str = "",
+        update_types: Optional[List[str]] = None,
+        unsubscribe_on_shutdown: bool = False,
+    ) -> None:
+        from aiohttp import web
+
+        from .dispatcher.webhook import create_https_ssl_context
+
+        app = self.create_webhook_app(
+            router=router,
+            path=path,
+            secret=secret,
+            secret_header=secret_header,
+            allowed_ip_networks=allowed_ip_networks,
+            max_processing_retries=max_processing_retries,
+            metrics=metrics,
+        )
+
+        async def _on_startup(_: web.Application) -> None:
+            await self._transport.open()
+            if subscribe_url:
+                await self.subscribe_webhook(
+                    subscribe_url=subscribe_url,
+                    update_types=update_types,
+                    secret=secret,
+                )
+
+        async def _on_cleanup(_: web.Application) -> None:
+            if subscribe_url and unsubscribe_on_shutdown:
+                await self.unsubscribe_webhook(subscribe_url)
+            await self.close()
+
+        app.on_startup.append(_on_startup)
+        app.on_cleanup.append(_on_cleanup)
+
+        ssl_context = None
+        if cert_path and key_path:
+            ssl_context = create_https_ssl_context(cert_path, key_path)
+
+        web.run_app(app, host=host, port=port, ssl_context=ssl_context)
 
     getUpdates = get_updates
     iterUpdates = iter_updates

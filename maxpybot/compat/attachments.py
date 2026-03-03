@@ -1,25 +1,28 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
+from ..types import AttachmentType
 from ..types.generated.runtime import validate_with_model
 
 
 ATTACHMENT_MODEL_BY_TYPE = {
-    "image": "PhotoAttachment",
-    "video": "VideoAttachment",
-    "audio": "AudioAttachment",
-    "file": "FileAttachment",
-    "contact": "ContactAttachment",
-    "sticker": "StickerAttachment",
-    "share": "ShareAttachment",
-    "location": "LocationAttachment",
-    "inline_keyboard": "InlineKeyboardAttachment",
+    AttachmentType.IMAGE: "PhotoAttachment",
+    AttachmentType.VIDEO: "VideoAttachment",
+    AttachmentType.AUDIO: "AudioAttachment",
+    AttachmentType.FILE: "FileAttachment",
+    AttachmentType.CONTACT: "ContactAttachment",
+    AttachmentType.STICKER: "StickerAttachment",
+    AttachmentType.SHARE: "ShareAttachment",
+    AttachmentType.LOCATION: "LocationAttachment",
+    AttachmentType.INLINE_KEYBOARD: "InlineKeyboardAttachment",
 }
 
 
 def parse_attachment(raw_attachment: Dict[str, Any]) -> Any:
-    attachment_type = str(raw_attachment.get("type") or "")
+    attachment_type = _to_attachment_type(raw_attachment.get("type"))
+    if attachment_type is None:
+        return raw_attachment
     model_name = ATTACHMENT_MODEL_BY_TYPE.get(attachment_type)
     if not model_name:
         return raw_attachment
@@ -46,3 +49,13 @@ def normalize_message_attachments(message_payload: Dict[str, Any]) -> Dict[str, 
             normalize_message_attachments(linked_message)
 
     return message_payload
+
+
+def _to_attachment_type(value: Any) -> Optional[AttachmentType]:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        return AttachmentType(raw)
+    except ValueError:
+        return None
