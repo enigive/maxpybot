@@ -88,13 +88,12 @@ await bot.chats.send_action(chat_id=chat.chat_id, action="typing_on")
 - `get_video_attachment_details(video_token)` / `getVideoAttachmentDetails`
 - `answer_on_callback(callback_id, callback: CallbackAnswerSchema | dict)` / `answerOnCallback`
 
+Про вложения (фото/видео/файлы), клавиатуры и форматирование текста: `docs/sending-messages.md`.
+
 Пример:
 
 ```python
-sent = await bot.messages.send_message(
-    chat_id=1234567890,
-    body={"text": "Hello from maxpybot"},
-)
+sent = await bot.send_message(chat_id=1234567890, text="Hello from maxpybot")
 print(sent.message.body.text)
 ```
 
@@ -171,6 +170,16 @@ print(uploaded.token)
 
 Кроме прямых API-групп, `MaxBot` дает high-level helpers:
 
+- отправка сообщений без `body`/dict:
+  - `send_message(...)`
+  - `send_image(...)`
+  - `send_video(...)`
+  - `send_audio(...)`
+  - `send_file(...)`
+  - `send_sticker(...)`
+  - `send_contact(...)`
+  - `send_location(...)`
+  - `send_share(...)`
 - `start_polling(router, marker=None, types=None)`
 - `create_webhook_app(...)`
 - `start_webhook(...)`

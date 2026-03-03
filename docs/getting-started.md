@@ -58,7 +58,7 @@ async def main() -> None:
 
     dp.include_routers(text_router, media_router)
 
-    await dp.start_polling(bot, types=["message_created"])
+    await dp.start_polling(bot)
 
 
 asyncio.run(main())
@@ -75,11 +75,10 @@ from maxpybot import MaxBot
 async def main() -> None:
     bot = MaxBot("YOUR_BOT_TOKEN")
     async with bot:
-        await bot.messages.send_message(
-            body={"text": "hello from maxpybot"},
-            chat_id=1234567890,
-        )
+        await bot.send_message(chat_id=1234567890, text="hello from maxpybot")
 
 
 asyncio.run(main())
 ```
+
+Дальше: отправка сообщений без JSON (фото/видео/файлы, клавиатуры, форматирование) — `docs/sending-messages.md`.

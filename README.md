@@ -68,13 +68,10 @@ async def main() -> None:
 
     @router.message(F.text)
     async def on_text(message: Message) -> None:
-        await bot.messages.send_message(
-            body={"text": "Hello from maxpybot"},
-            chat_id=message.chat.chat_id,
-        )
+        await message.answer(text="Hello from maxpybot")
 
     dp.include_router(router)
-    await dp.start_polling(bot, types=["message_created", "message_callback"])
+    await dp.start_polling(bot)
 
 
 asyncio.run(main())
@@ -101,10 +98,7 @@ def run_webhook_server() -> None:
     
     @router.message_created()
     async def on_message(message: Message) -> None:
-        await bot.messages.send_message(
-            chat_id=message.chat.chat_id,
-            body={"text": "Webhook is active"},
-        )
+        await message.answer(text="Webhook is active")
 
     bot.start_webhook(
         router=router,
@@ -118,23 +112,6 @@ def run_webhook_server() -> None:
         max_processing_retries=2,
         metrics=WEBHOOK_METRICS,
         subscribe_url=WEBHOOK_URL,
-        update_types=[
-            "message_created",
-            "message_callback",
-            "message_edited",
-            "message_removed",
-            "bot_added",
-            "bot_removed",
-            "dialog_muted",
-            "dialog_unmuted",
-            "dialog_cleared",
-            "dialog_removed",
-            "user_added",
-            "user_removed",
-            "bot_started",
-            "bot_stopped",
-            "chat_title_changed",
-        ],
         unsubscribe_on_shutdown=True,
     )
 ```

@@ -121,7 +121,6 @@ async def test_subscriptions_subscribe_uses_subscription_schema() -> None:
     await api.subscribe("https://bot.example.com/webhook")
     assert captured["json_body"] == {
         "url": "https://bot.example.com/webhook",
-        "update_types": [],
         "secret": "",
         "version": "1.2.5",
     }

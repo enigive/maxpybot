@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
 from .base import MaxBaseModel
 from .generated.models import (
@@ -38,6 +38,9 @@ from .generated.models import (
     UserRemovedFromChatUpdate as _UserRemovedFromChatUpdate,
     VideoAttachmentDetails as _VideoAttachmentDetails,
 )
+
+if TYPE_CHECKING:
+    from ..api_client import MaxBot
 
 
 class User(_User):
@@ -131,6 +134,237 @@ class Message(_Message):
             return None
         return payload
 
+    async def answer(
+        self,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_message(
+            chat_id=self.chat.chat_id,
+            text=text,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+            inline_keyboard=inline_keyboard,
+            reply_keyboard=reply_keyboard,
+        )
+
+    async def answer_image(
+        self,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["PhotoTokens"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_image(
+            chat_id=self.chat.chat_id,
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+            caption=caption,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+            inline_keyboard=inline_keyboard,
+            reply_keyboard=reply_keyboard,
+        )
+
+    async def answer_video(
+        self,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_video(
+            chat_id=self.chat.chat_id,
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+            caption=caption,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+            inline_keyboard=inline_keyboard,
+            reply_keyboard=reply_keyboard,
+        )
+
+    async def answer_audio(
+        self,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_audio(
+            chat_id=self.chat.chat_id,
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+            caption=caption,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+
+    async def answer_file(
+        self,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_file(
+            chat_id=self.chat.chat_id,
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+            caption=caption,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+
+    async def answer_sticker(
+        self,
+        code: str,
+        notify: bool = True,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_sticker(
+            chat_id=self.chat.chat_id,
+            code=code,
+            notify=notify,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+
+    async def answer_contact(
+        self,
+        name: str,
+        contact_id: Optional[int] = None,
+        vcf_phone: Optional[str] = None,
+        vcf_info: Optional[str] = None,
+        notify: bool = True,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_contact(
+            chat_id=self.chat.chat_id,
+            name=name,
+            contact_id=contact_id,
+            vcf_phone=vcf_phone,
+            vcf_info=vcf_info,
+            notify=notify,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+
+    async def answer_location(
+        self,
+        latitude: float,
+        longitude: float,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_location(
+            chat_id=self.chat.chat_id,
+            latitude=latitude,
+            longitude=longitude,
+            text=text,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+            inline_keyboard=inline_keyboard,
+            reply_keyboard=reply_keyboard,
+        )
+
+    async def answer_share(
+        self,
+        url: str,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        return await self.bot.send_share(
+            chat_id=self.chat.chat_id,
+            url=url,
+            text=text,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+            inline_keyboard=inline_keyboard,
+            reply_keyboard=reply_keyboard,
+        )
+
 
 class Callback(_Callback):
     user: User
@@ -141,6 +375,20 @@ class Callback(_Callback):
         if self.message is None:
             return None
         return self.message.chat
+
+    async def answer(self, notification: str, bot: Optional["MaxBot"] = None) -> Any:
+        notification_text = str(notification or "").strip()
+        if not notification_text:
+            raise ValueError("notification is empty")
+
+        target_bot = bot or self.bot
+        if target_bot is None:
+            raise RuntimeError("bot instance is not available in this callback")
+
+        return await target_bot.messages.answer_on_callback(
+            callback_id=self.callback_id,
+            callback={"notification": notification_text},
+        )
 
 
 class BotInfo(_BotInfo):

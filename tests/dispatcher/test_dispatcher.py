@@ -985,7 +985,7 @@ async def test_webhook_handler_retries_processing_and_updates_metrics(monkeypatc
 
     parse_calls: Dict[str, int] = {"count": 0}
 
-    def flaky_parse_update(payload: Dict[str, Any]) -> Dict[str, Any]:
+    def flaky_parse_update(payload: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         parse_calls["count"] += 1
         if parse_calls["count"] == 1:
             raise RuntimeError("temporary parse error")

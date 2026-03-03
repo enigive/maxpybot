@@ -35,7 +35,12 @@ from maxpybot.types import User, Chat, Message
 - `CallbackAnswerSchema` → `bot.messages.answer_on_callback(...)`
 - `SubscriptionSchema` → внутренне используется в `bot.subscriptions.subscribe(...)`
 
+Для отправки сообщений **без JSON** (и без сборки `NewMessageSchema` вручную) используйте high-level методы:
+`bot.send_message/send_image/send_video/...` — см. `docs/sending-messages.md`.
+
 ## Пример
+
+Ниже показан низкоуровневый вариант (полезно, когда вы хотите формировать payload строго схемами).
 
 ```python
 from maxpybot.types import NewMessageSchema
@@ -49,6 +54,15 @@ body = NewMessageSchema(
 
 await bot.messages.send_message(body=body, chat_id=123)
 ```
+
+## NewMessageSchema: вложения и клавиатуры
+
+Для практических примеров (фото/видео/файлы, inline/reply клавиатуры, share/location) см.:
+
+- `docs/sending-messages.md`
+
+Напоминание: при использовании низкоуровневого `dict`/`NewMessageSchema` для отправки **должны присутствовать**
+как минимум ключи `text`, `attachments`, `link` (их можно передавать пустыми: `attachments=[]`, `link={}`).
 
 ## Обратная совместимость
 

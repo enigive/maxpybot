@@ -57,6 +57,21 @@ from .schemas import (
     SubscriptionSchema,
     UserIdsSchema,
 )
+from .keyboards import (
+    InlineKeyboard,
+    InlineKeyboardButton,
+    InlineCallbackButton,
+    InlineLinkButton,
+    InlineRequestContactButton,
+    InlineRequestGeoLocationButton,
+    InlineChatButton,
+    InlineMessageButton,
+    ReplyKeyboard,
+    ReplyKeyboardButton,
+    ReplyMessageButton,
+    ReplyGeoLocationButton,
+    ReplyContactButton,
+)
 
 __all__ = [
     "MaxBaseModel",
@@ -114,4 +129,17 @@ __all__ = [
     "DialogClearedUpdate",
     "DialogRemovedUpdate",
     "UnknownUpdate",
+    "InlineKeyboard",
+    "InlineKeyboardButton",
+    "InlineCallbackButton",
+    "InlineLinkButton",
+    "InlineRequestContactButton",
+    "InlineRequestGeoLocationButton",
+    "InlineChatButton",
+    "InlineMessageButton",
+    "ReplyKeyboard",
+    "ReplyKeyboardButton",
+    "ReplyMessageButton",
+    "ReplyGeoLocationButton",
+    "ReplyContactButton",
 ]

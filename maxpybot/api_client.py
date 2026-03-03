@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
     from .dispatcher.router import Router
     from .dispatcher.webhook import WebhookMetrics
+    from .types import InlineKeyboard, PhotoTokens, ReplyKeyboard, UploadedInfo
 
 UpdateHandler = Callable[[Any], None]
 
@@ -132,7 +133,7 @@ class MaxBot:
             )
             raw_updates = response.get("updates", [])
             for raw_update in raw_updates:
-                update = self._update_parser.parse_update(raw_update)
+                update = self._update_parser.parse_update(raw_update, bot=self)
                 if self.update_handler is not None:
                     self.update_handler(update)
                 else:
@@ -171,6 +172,7 @@ class MaxBot:
         return create_webhook_app(
             router=router,
             path=path,
+            bot=self,
             secret=secret,
             secret_header=secret_header,
             allowed_ip_networks=allowed_ip_networks,
@@ -250,5 +252,434 @@ class MaxBot:
 
         web.run_app(app, host=host, port=port, ssl_context=ssl_context)
 
+    async def send_message(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        attachments: List[Dict[str, Any]] = []
+        attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=reply_keyboard))
+        body = self._build_new_message_body(
+            text=text,
+            attachments=attachments,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_image(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["PhotoTokens"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        image_attachment = await self._build_image_attachment(
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        attachments: List[Dict[str, Any]] = [image_attachment]
+        attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=reply_keyboard))
+        body = self._build_new_message_body(
+            text=caption,
+            attachments=attachments,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_video(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        video_attachment = await self._build_uploaded_token_attachment(
+            attachment_type="video",
+            upload_type="video",
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        attachments: List[Dict[str, Any]] = [video_attachment]
+        attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=reply_keyboard))
+        body = self._build_new_message_body(
+            text=caption,
+            attachments=attachments,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_audio(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        audio_attachment = await self._build_uploaded_token_attachment(
+            attachment_type="audio",
+            upload_type="audio",
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        body = self._build_new_message_body(
+            text=caption,
+            attachments=[audio_attachment],
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_file(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
+        token: Optional[str] = None,
+        uploaded: Optional["UploadedInfo"] = None,
+        caption: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        file_attachment = await self._build_uploaded_token_attachment(
+            attachment_type="file",
+            upload_type="file",
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        body = self._build_new_message_body(
+            text=caption,
+            attachments=[file_attachment],
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_sticker(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        code: str = "",
+        notify: bool = True,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if not code:
+            raise ValueError("sticker code is empty")
+        body = self._build_new_message_body(
+            text="",
+            attachments=[{"type": "sticker", "payload": {"code": code}}],
+            notify=notify,
+            format=None,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_contact(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        name: str = "",
+        contact_id: Optional[int] = None,
+        vcf_phone: Optional[str] = None,
+        vcf_info: Optional[str] = None,
+        notify: bool = True,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+    ) -> Any:
+        if not name:
+            raise ValueError("contact name is empty")
+        payload: Dict[str, Any] = {"name": name}
+        if contact_id is not None:
+            payload["contact_id"] = contact_id
+        if vcf_phone is not None:
+            payload["vcf_phone"] = vcf_phone
+        if vcf_info is not None:
+            payload["vcf_info"] = vcf_info
+
+        body = self._build_new_message_body(
+            text="",
+            attachments=[{"type": "contact", "payload": payload}],
+            notify=notify,
+            format=None,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_location(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        latitude: float,
+        longitude: float,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        location_attachment = {"type": "location", "latitude": latitude, "longitude": longitude}
+        attachments: List[Dict[str, Any]] = [location_attachment]
+        attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=reply_keyboard))
+        body = self._build_new_message_body(
+            text=text,
+            attachments=attachments,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    async def send_share(
+        self,
+        *,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        url: str,
+        text: str = "",
+        notify: bool = True,
+        format: Optional[str] = None,
+        reply_to_message_id: Optional[str] = None,
+        forward_message_id: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+        reply_keyboard: Optional["ReplyKeyboard"] = None,
+    ) -> Any:
+        if not url:
+            raise ValueError("share url is empty")
+        share_attachment = {"type": "share", "payload": {"url": url}}
+        attachments: List[Dict[str, Any]] = [share_attachment]
+        attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=reply_keyboard))
+        body = self._build_new_message_body(
+            text=text,
+            attachments=attachments,
+            notify=notify,
+            format=format,
+            reply_to_message_id=reply_to_message_id,
+            forward_message_id=forward_message_id,
+        )
+        return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
+
+    def _build_keyboard_attachments(
+        self,
+        *,
+        inline_keyboard: Optional["InlineKeyboard"],
+        reply_keyboard: Optional["ReplyKeyboard"],
+    ) -> List[Dict[str, Any]]:
+        if inline_keyboard is not None and reply_keyboard is not None:
+            raise ValueError("only one keyboard can be attached: inline_keyboard or reply_keyboard")
+
+        attachments: List[Dict[str, Any]] = []
+        if inline_keyboard is not None:
+            to_attachment = getattr(inline_keyboard, "to_attachment_request", None)
+            if not callable(to_attachment):
+                raise TypeError("inline_keyboard must be InlineKeyboard")
+            attachments.append(to_attachment())
+        if reply_keyboard is not None:
+            to_attachment = getattr(reply_keyboard, "to_attachment_request", None)
+            if not callable(to_attachment):
+                raise TypeError("reply_keyboard must be ReplyKeyboard")
+            attachments.append(to_attachment())
+        return attachments
+
+    def _build_new_message_body(
+        self,
+        *,
+        text: str,
+        attachments: List[Dict[str, Any]],
+        notify: bool,
+        format: Optional[str],
+        reply_to_message_id: Optional[str],
+        forward_message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        link = self._build_message_link(reply_to_message_id=reply_to_message_id, forward_message_id=forward_message_id)
+        body: Dict[str, Any] = {"text": text, "attachments": attachments, "link": link}
+        if not notify:
+            body["notify"] = False
+        if format is not None:
+            body["format"] = format
+        return body
+
+    def _build_message_link(
+        self,
+        *,
+        reply_to_message_id: Optional[str],
+        forward_message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        if reply_to_message_id and forward_message_id:
+            raise ValueError("only one of reply_to_message_id or forward_message_id can be set")
+        if reply_to_message_id:
+            return {"type": "reply", "mid": reply_to_message_id}
+        if forward_message_id:
+            return {"type": "forward", "mid": forward_message_id}
+        return {}
+
+    async def _build_image_attachment(
+        self,
+        *,
+        file_path: Optional[str],
+        url: Optional[str],
+        token: Optional[str],
+        uploaded: Optional[Any],
+    ) -> Dict[str, Any]:
+        mode = _pick_one(
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        if mode == "url":
+            return {"type": "image", "payload": {"url": str(url)}}
+        if mode == "token":
+            return {"type": "image", "payload": {"token": str(token)}}
+        if mode == "uploaded":
+            photos = _extract_photos(uploaded)
+            return {"type": "image", "payload": {"photos": photos}}
+
+        uploaded_tokens = await self.uploads.upload_media_from_file("image", str(file_path))
+        photos = _extract_photos(uploaded_tokens)
+        return {"type": "image", "payload": {"photos": photos}}
+
+    async def _build_uploaded_token_attachment(
+        self,
+        *,
+        attachment_type: str,
+        upload_type: str,
+        file_path: Optional[str],
+        url: Optional[str],
+        token: Optional[str],
+        uploaded: Optional[Any],
+    ) -> Dict[str, Any]:
+        mode = _pick_one(
+            file_path=file_path,
+            url=url,
+            token=token,
+            uploaded=uploaded,
+        )
+        if mode == "token":
+            return {"type": attachment_type, "payload": {"token": str(token)}}
+        if mode == "uploaded":
+            resolved = _extract_token(uploaded)
+            if not resolved:
+                raise ValueError("uploaded token is empty")
+            return {"type": attachment_type, "payload": {"token": resolved}}
+        if mode == "url":
+            uploaded_info = await self.uploads.upload_media_from_url(upload_type, str(url))
+            resolved = _extract_token(uploaded_info)
+            if not resolved:
+                raise ValueError("upload result token is empty")
+            return {"type": attachment_type, "payload": {"token": resolved}}
+
+        uploaded_info = await self.uploads.upload_media_from_file(upload_type, str(file_path))
+        resolved = _extract_token(uploaded_info)
+        if not resolved:
+            raise ValueError("upload result token is empty")
+        return {"type": attachment_type, "payload": {"token": resolved}}
+
     getUpdates = get_updates
     iterUpdates = iter_updates
+
+
+def _pick_one(**values: Any) -> str:
+    provided = [name for name, value in values.items() if value is not None]
+    if len(provided) != 1:
+        raise ValueError("exactly one source must be provided: {0}".format(", ".join(values.keys())))
+    return provided[0]
+
+
+def _extract_token(value: Any) -> str:
+    if isinstance(value, dict):
+        return str(value.get("token") or "")
+    if hasattr(value, "token"):
+        return str(getattr(value, "token") or "")
+    if hasattr(value, "model_dump"):
+        dumped = value.model_dump(by_alias=True)
+        if isinstance(dumped, dict):
+            return str(dumped.get("token") or "")
+    return ""
+
+
+def _extract_photos(value: Any) -> Dict[str, Any]:
+    if isinstance(value, dict):
+        photos = value.get("photos")
+        if isinstance(photos, dict):
+            return photos
+        return {}
+    if hasattr(value, "photos"):
+        photos = getattr(value, "photos")
+        if isinstance(photos, dict):
+            return photos
+    if hasattr(value, "model_dump"):
+        dumped = value.model_dump(by_alias=True)
+        if isinstance(dumped, dict):
+            photos = dumped.get("photos")
+            if isinstance(photos, dict):
+                return photos
+    return {}

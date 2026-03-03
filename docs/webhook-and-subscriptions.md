@@ -28,6 +28,8 @@ await bot.subscribe_webhook(
 )
 ```
 
+Если `update_types` не передан, библиотека подпишется на **все поддерживаемые типы апдейтов** по source-of-truth схеме (Go/OpenAPI).
+
 `secret` из `subscribe_webhook(...)` должен совпадать с secret, который проверяет ваш
 `WebhookHandler` по заголовку `X-Max-Bot-Api-Secret`.
 

@@ -16,13 +16,15 @@ class SubscriptionsAPI(BaseAPIGroup):
         update_types: Optional[List[str]] = None,
         secret: str = "",
     ) -> Any:
+        payload_data: Dict[str, Any] = {
+            "url": subscribe_url,
+            "secret": secret,
+            "version": self._transport.version,
+        }
+        if update_types is not None:
+            payload_data["update_types"] = update_types
         payload = build_request_payload(
-            {
-                "url": subscribe_url,
-                "update_types": update_types or [],
-                "secret": secret,
-                "version": self._transport.version,
-            },
+            payload_data,
             SubscriptionSchema,
         )
         return await self._request_model("SimpleQueryResult", "POST", "subscriptions", json_body=payload)

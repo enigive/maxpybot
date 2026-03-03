@@ -33,6 +33,7 @@ class WebhookHandler:
     def __init__(
         self,
         router: Router,
+        bot: Optional[MaxBot] = None,
         secret: str = "",
         secret_header: str = WEBHOOK_SECRET_HEADER,
         allowed_ip_networks: Optional[List[str]] = None,
@@ -40,6 +41,7 @@ class WebhookHandler:
         metrics: Optional[WebhookMetrics] = None,
     ) -> None:
         self._router = router
+        self._bot = bot
         self._parser = UpdateParser(debug=False)
         self._secret = secret
         self._secret_header = secret_header
@@ -81,7 +83,7 @@ class WebhookHandler:
         attempt = 0
         while True:
             try:
-                update = self._parser.parse_update(payload)
+                update = self._parser.parse_update(payload, bot=self._bot)
                 await self._router.dispatch(update)
                 self._metrics.processed_total += 1
                 if attempt > 0:
@@ -139,6 +141,7 @@ WEBHOOK_HANDLER_APP_KEY = web.AppKey("maxpybot.webhook_handler", WebhookHandler)
 def create_webhook_app(
     router: Router,
     path: str,
+    bot: Optional[MaxBot] = None,
     secret: str = "",
     secret_header: str = WEBHOOK_SECRET_HEADER,
     allowed_ip_networks: Optional[List[str]] = None,
@@ -148,6 +151,7 @@ def create_webhook_app(
     app = web.Application()
     handler = WebhookHandler(
         router=router,
+        bot=bot,
         secret=secret,
         secret_header=secret_header,
         allowed_ip_networks=allowed_ip_networks,

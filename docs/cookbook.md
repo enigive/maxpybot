@@ -25,21 +25,20 @@ STATE_WAIT_CONTACT = "support:wait_contact"
 async def start_support(message: Message, fsm: FSMContext) -> None:
     await fsm.clear()
     await fsm.set_state(STATE_WAIT_NAME)
-    await bot.messages.send_message(chat_id=message.chat.chat_id, body={"text": "Как вас зовут?"})
+    await message.answer(text="Как вас зовут?")
 
 @router.message_created(state=STATE_WAIT_NAME)
 async def save_name(message: Message, fsm: FSMContext) -> None:
     await fsm.update_data(name=message.body.text)
     await fsm.set_state(STATE_WAIT_CONTACT)
-    await bot.messages.send_message(chat_id=message.chat.chat_id, body={"text": "Оставьте контакт"})
+    await message.answer(text="Оставьте контакт")
 
 @router.message_created(state=STATE_WAIT_CONTACT)
 async def finish_support(message: Message, fsm: FSMContext) -> None:
     data = await fsm.get_data()
     await fsm.clear()
-    await bot.messages.send_message(
-        chat_id=message.chat.chat_id,
-        body={"text": "Спасибо, {0}. Мы свяжемся.".format(data.get("name", "друг"))},
+    await message.answer(
+        text="Спасибо, {0}. Мы свяжемся.".format(data.get("name", "друг")),
     )
 
 dp.include_router(router)
