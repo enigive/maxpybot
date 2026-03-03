@@ -41,6 +41,7 @@ from .generated.models import (
 
 if TYPE_CHECKING:
     from ..api_client import MaxBot
+    from .keyboards import InlineKeyboard, ReplyKeyboard
 
 
 class User(_User):

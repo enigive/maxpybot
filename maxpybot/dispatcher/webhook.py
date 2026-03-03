@@ -4,7 +4,10 @@ import logging
 import ssl
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address, ip_network
-from typing import List, Mapping, Optional, Union
+from typing import List, Mapping, Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..api_client import MaxBot
 
 from aiohttp import web
 

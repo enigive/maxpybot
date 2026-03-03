@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from ..types.generated.runtime import get_model_class, validate_with_model
 from .attachments import normalize_message_attachments

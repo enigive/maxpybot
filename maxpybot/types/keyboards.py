@@ -5,20 +5,22 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 from .base import MaxBaseModel
 
 
+from pydantic import Field
+
 class InlineKeyboardButton(MaxBaseModel):
-    type: str = ...
-    text: str = ...
+    type: str = Field(...)
+    text: str = Field(...)
 
 
 class InlineCallbackButton(InlineKeyboardButton):
     type: str = "callback"
-    payload: str = ...
+    payload: str = Field(...)
     intent: Optional[str] = None
 
 
 class InlineLinkButton(InlineKeyboardButton):
     type: str = "link"
-    url: str = ...
+    url: str = Field(...)
 
 
 class InlineRequestContactButton(InlineKeyboardButton):
@@ -32,7 +34,7 @@ class InlineRequestGeoLocationButton(InlineKeyboardButton):
 
 class InlineChatButton(InlineKeyboardButton):
     type: str = "chat"
-    chat_title: str = ...
+    chat_title: str = Field(...)
     chat_description: Optional[str] = None
     start_payload: Optional[str] = None
     uuid: Optional[int] = None
@@ -53,7 +55,7 @@ InlineButton = Union[
 
 
 class InlineKeyboard(MaxBaseModel):
-    buttons: List[List[InlineButton]] = ...
+    buttons: List[List[InlineButton]] = Field(...)
 
     @classmethod
     def row(cls, *buttons: InlineButton) -> List[InlineButton]:
@@ -75,8 +77,8 @@ class InlineKeyboard(MaxBaseModel):
 
 
 class ReplyKeyboardButton(MaxBaseModel):
-    type: str = ...
-    text: str = ...
+    type: str = Field(...)
+    text: str = Field(...)
     payload: Optional[str] = None
 
 
@@ -98,7 +100,7 @@ ReplyButton = Union[ReplyMessageButton, ReplyGeoLocationButton, ReplyContactButt
 
 
 class ReplyKeyboard(MaxBaseModel):
-    buttons: List[List[ReplyButton]] = ...
+    buttons: List[List[ReplyButton]] = Field(...)
     direct: Optional[bool] = None
     direct_user_id: Optional[int] = None
 
