@@ -48,11 +48,11 @@ async def main() -> None:
     async def on_text(message: Message) -> None:
         print("Text:", message.body.text)
 
-    @media_router.message(F.sticker)
+    @media_router.message(F.body.sticker)
     async def on_sticker(message: Message) -> None:
         print("Sticker in chat:", message.chat.chat_id)
 
-    @media_router.message(F.video)
+    @media_router.message(F.body.video)
     async def on_video(message: Message) -> None:
         print("Video in chat:", message.chat.chat_id)
 

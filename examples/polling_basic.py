@@ -15,7 +15,7 @@ async def main() -> None:
 
     @router.message(F.text)
     async def on_text(message: Message) -> None:
-        await bot.send_message(chat_id=message.chat.chat_id, text="Hello from maxpybot")
+        await message.answer(text="Hello from maxpybot")
 
     dp.include_router(router)
     await dp.start_polling(bot)

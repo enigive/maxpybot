@@ -21,9 +21,9 @@ async def main() -> None:
     async def on_feedback_start(message: Message, fsm: FSMContext) -> None:
         await fsm.clear()
         await fsm.set_state(STATE_AWAIT_NAME)
-        await bot.send_message(chat_id=message.chat.chat_id, text="Как вас зовут?")
+        await message.answer(text="Как вас зовут?")
 
-    @router.message_created(state=STATE_AWAIT_NAME)
+    @router.message(state=STATE_AWAIT_NAME)
     async def on_feedback_name(message: Message, fsm: FSMContext) -> None:
         name = message.body.text.strip()
         if not name:
@@ -31,9 +31,9 @@ async def main() -> None:
 
         await fsm.update_data(name=name)
         await fsm.set_state(STATE_AWAIT_CONTACT)
-        await bot.send_message(chat_id=message.chat.chat_id, text="Оставьте email или телефон для связи.")
+        await message.answer(text="Оставьте email или телефон для связи.")
 
-    @router.message_created(state=STATE_AWAIT_CONTACT)
+    @router.message(state=STATE_AWAIT_CONTACT)
     async def on_feedback_contact(message: Message, fsm: FSMContext) -> None:
         contact = message.body.text.strip()
         if not contact:
@@ -42,12 +42,11 @@ async def main() -> None:
         data = await fsm.get_data()
         user_name = str(data.get("name") or "друг")
         await fsm.clear()
-        await bot.send_message(
-            chat_id=message.chat.chat_id,
+        await message.answer(
             text="Спасибо, {0}! Мы свяжемся: {1}".format(user_name, contact),
         )
 
-    await bot.start_polling(router)
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
