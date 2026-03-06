@@ -1,8 +1,7 @@
 import asyncio
 
 from maxpybot import MaxBot
-from maxpybot.dispatcher import F
-from maxpybot.dispatcher.router import Router
+from maxpybot.dispatcher import Dispatcher, F
 from maxpybot.fsm import FSMContext, MemoryStorage
 from maxpybot.types import Message
 
@@ -15,15 +14,15 @@ STATE_AWAIT_CONTACT = "feedback:await_contact"
 async def main() -> None:
     bot = MaxBot(BOT_TOKEN)
     storage = MemoryStorage()
-    router = Router(storage=storage)
+    dp = Dispatcher(storage=storage)
 
-    @router.message(F.text.startswith("/feedback"))
+    @dp.message(F.text.startswith("/feedback"))
     async def on_feedback_start(message: Message, fsm: FSMContext) -> None:
         await fsm.clear()
         await fsm.set_state(STATE_AWAIT_NAME)
         await message.answer(text="Как вас зовут?")
 
-    @router.message(state=STATE_AWAIT_NAME)
+    @dp.message(state=STATE_AWAIT_NAME)
     async def on_feedback_name(message: Message, fsm: FSMContext) -> None:
         name = message.body.text.strip()
         if not name:
@@ -33,7 +32,7 @@ async def main() -> None:
         await fsm.set_state(STATE_AWAIT_CONTACT)
         await message.answer(text="Оставьте email или телефон для связи.")
 
-    @router.message(state=STATE_AWAIT_CONTACT)
+    @dp.message(state=STATE_AWAIT_CONTACT)
     async def on_feedback_contact(message: Message, fsm: FSMContext) -> None:
         contact = message.body.text.strip()
         if not contact:
