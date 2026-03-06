@@ -36,11 +36,15 @@ def normalize_message_attachments(message_payload: Dict[str, Any]) -> Dict[str, 
 
     raw_attachments = body.get("attachments")
     if not isinstance(raw_attachments, list):
-        raw_attachments = body.get("raw_attachments")
-    if isinstance(raw_attachments, list):
-        body["attachments"] = [
-            parse_attachment(item) if isinstance(item, dict) else item for item in raw_attachments
-        ]
+        legacy_attachments = body.get("raw_attachments")
+        if isinstance(legacy_attachments, list):
+            raw_attachments = legacy_attachments
+        else:
+            raw_attachments = []
+
+    body["attachments"] = [
+        parse_attachment(item) if isinstance(item, dict) else item for item in raw_attachments
+    ]
 
     link = message_payload.get("link")
     if isinstance(link, dict):

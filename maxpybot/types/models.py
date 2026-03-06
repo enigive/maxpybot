@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
+from pydantic import Field
+
 from .base import MaxBaseModel
 from .generated.models import (
     Callback as _Callback,
@@ -101,7 +103,8 @@ class Recipient(_Recipient):
 
 
 class MessageBody(_MessageBody):
-    pass
+    attachments: List[Any] = Field(default_factory=list)
+    text: Optional[str] = None
 
 
 class Message(_Message):

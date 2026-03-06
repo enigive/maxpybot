@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_args, get_origin
 
+from typing_extensions import Annotated, get_type_hints
+
 from ..fsm import FSMContext
 from ..types import Callback, Message, Update
 from ..types.base import MaxBaseModel
@@ -15,6 +17,7 @@ class HandlerSignatureError(ValueError):
 
 def validate_handler_signature(callback: Callable[..., Any]) -> None:
     signature = inspect.signature(callback)
+    resolved_annotations = _resolve_callback_annotations(callback)
     parameters = list(signature.parameters.values())
     for parameter in parameters:
         if parameter.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL):
@@ -33,7 +36,10 @@ def validate_handler_signature(callback: Callable[..., Any]) -> None:
                 )
             )
 
-        supports = _supports_parameter(parameter)
+        supports = _supports_parameter(
+            parameter,
+            _resolved_parameter_annotation(parameter, resolved_annotations),
+        )
         if not supports:
             raise HandlerSignatureError(
                 "Handler '{0}' has unsupported parameter '{1}'".format(
@@ -45,12 +51,17 @@ def validate_handler_signature(callback: Callable[..., Any]) -> None:
 
 async def invoke_handler(callback: Callable[..., Any], context: HandlerContext) -> Any:
     signature = inspect.signature(callback)
+    resolved_annotations = _resolve_callback_annotations(callback)
     args: List[Any] = []
     kwargs: Dict[str, Any] = {}
     missing_required: List[str] = []
 
     for parameter in signature.parameters.values():
-        resolved, has_value = _resolve_parameter_value(parameter, context)
+        resolved, has_value = _resolve_parameter_value(
+            parameter,
+            context,
+            _resolved_parameter_annotation(parameter, resolved_annotations),
+        )
         if not has_value:
             if parameter.default is not inspect.Parameter.empty:
                 continue
@@ -76,8 +87,27 @@ async def invoke_handler(callback: Callable[..., Any], context: HandlerContext) 
     return result
 
 
-def _supports_parameter(parameter: inspect.Parameter) -> bool:
-    annotation = parameter.annotation
+def _resolved_parameter_annotation(
+    parameter: inspect.Parameter,
+    resolved_annotations: Dict[str, Any],
+) -> Any:
+    return resolved_annotations.get(parameter.name, parameter.annotation)
+
+
+def _resolve_callback_annotations(callback: Callable[..., Any]) -> Dict[str, Any]:
+    globalns = getattr(callback, "__globals__", None)
+    try:
+        return get_type_hints(callback, globalns=globalns, include_extras=True)
+    except TypeError:
+        try:
+            return get_type_hints(callback, globalns=globalns)
+        except Exception:  # noqa: BLE001
+            return {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _supports_parameter(parameter: inspect.Parameter, annotation: Any) -> bool:
     name = parameter.name
 
     if _annotation_includes(annotation, HandlerContext):
@@ -117,8 +147,8 @@ def _supports_parameter(parameter: inspect.Parameter) -> bool:
 def _resolve_parameter_value(
     parameter: inspect.Parameter,
     context: HandlerContext,
+    annotation: Any,
 ) -> Tuple[Any, bool]:
-    annotation = parameter.annotation
     name = parameter.name
 
     if _annotation_includes(annotation, HandlerContext):
@@ -191,11 +221,13 @@ def _coerce_update_by_annotation(update: Any, annotation: Any) -> Any:
 
 
 def _first_model_annotation(annotation: Any) -> Optional[Any]:
+    annotation = _unwrap_annotation(annotation)
     if _is_model_class(annotation):
         return annotation
     origin = get_origin(annotation)
     if origin is Union:
         for option in get_args(annotation):
+            option = _unwrap_annotation(option)
             if _is_model_class(option):
                 return option
     return None
@@ -206,6 +238,7 @@ def _is_model_class(value: Any) -> bool:
 
 
 def _annotation_includes(annotation: Any, klass: Any) -> bool:
+    annotation = _unwrap_annotation(annotation)
     if annotation is inspect.Parameter.empty:
         return False
     if annotation is Any:
@@ -214,26 +247,38 @@ def _annotation_includes(annotation: Any, klass: Any) -> bool:
         return True
     origin = get_origin(annotation)
     if origin is Union:
-        return any(option == klass for option in get_args(annotation))
+        return any(_unwrap_annotation(option) == klass for option in get_args(annotation))
     return False
 
 
 def _annotation_includes_subclass(annotation: Any, base_class: Any) -> bool:
+    annotation = _unwrap_annotation(annotation)
     if isinstance(annotation, type) and issubclass(annotation, base_class):
         return True
     origin = get_origin(annotation)
     if origin is Union:
         for option in get_args(annotation):
+            option = _unwrap_annotation(option)
             if isinstance(option, type) and issubclass(option, base_class):
                 return True
     return False
 
 
 def _annotation_is_optional(annotation: Any) -> bool:
+    annotation = _unwrap_annotation(annotation)
     origin = get_origin(annotation)
     if origin is not Union:
         return False
-    return any(option is type(None) for option in get_args(annotation))
+    return any(_unwrap_annotation(option) is type(None) for option in get_args(annotation))
+
+
+def _unwrap_annotation(annotation: Any) -> Any:
+    origin = get_origin(annotation)
+    if origin is Annotated:
+        args = get_args(annotation)
+        if args:
+            return _unwrap_annotation(args[0])
+    return annotation
 
 
 def _extract_update_type(update: Any) -> Optional[str]:

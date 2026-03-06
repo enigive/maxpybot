@@ -4,7 +4,7 @@ from typing import Any, Dict
 import pytest
 
 from maxpybot.compat.capabilities import CAPABILITY_MATRIX, detect_payload_capabilities, supported_capabilities
-from maxpybot.compat.attachments import ATTACHMENT_MODEL_BY_TYPE
+from maxpybot.compat.attachments import ATTACHMENT_MODEL_BY_TYPE, normalize_message_attachments
 from maxpybot.compat.update_parser import UpdateParser
 from maxpybot.types import (
     AttachmentType,
@@ -62,6 +62,33 @@ def test_parse_message_created_update_with_attachment_and_extra_fields() -> None
     assert _as_dict(attachments[0]).get("type") == "image"
 
 
+def test_parse_message_created_update_without_text_or_attachments() -> None:
+    parser = UpdateParser()
+    raw_update = {
+        "update_type": "message_created",
+        "timestamp": 1710000000000,
+        "message": {
+            "sender": {"user_id": 100, "name": "Alice"},
+            "recipient": {"chat_id": 200, "chat_type": "chat", "user_id": 0},
+            "timestamp": 1710000000000,
+            "body": {
+                "mid": "m-empty",
+                "seq": 1,
+            },
+        },
+    }
+
+    parsed = parser.parse_update(raw_update)
+    assert not isinstance(parsed, UnknownUpdate)
+
+    parsed_dict = _as_dict(parsed)
+    message = _as_dict(parsed_dict.get("message"))
+    body = _as_dict(message.get("body"))
+
+    assert body.get("attachments") == []
+    assert body.get("text") is None
+
+
 def test_attachment_parser_mapping_uses_only_enum_types() -> None:
     assert set(ATTACHMENT_MODEL_BY_TYPE.keys()) == set(AttachmentType)
 
@@ -110,6 +137,19 @@ def test_parse_raw_attachments_compat_field() -> None:
     assert isinstance(attachments, list)
     assert len(attachments) == 1
     assert _as_dict(attachments[0]).get("type") == "image"
+
+
+def test_normalize_message_attachments_defaults_to_empty_list() -> None:
+    payload = {
+        "body": {
+            "mid": "m-no-attachments",
+            "seq": 1,
+        }
+    }
+
+    normalized = normalize_message_attachments(payload)
+
+    assert normalized["body"]["attachments"] == []
 
 
 def test_message_callback_update_binds_message_inside_callback() -> None:
