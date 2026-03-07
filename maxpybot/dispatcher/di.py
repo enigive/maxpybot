@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import pydantic
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_args, get_origin
 
 from typing_extensions import Annotated, get_type_hints
@@ -57,16 +58,20 @@ async def invoke_handler(callback: Callable[..., Any], context: HandlerContext) 
     missing_required: List[str] = []
 
     for parameter in signature.parameters.values():
+        annotation = _resolved_parameter_annotation(parameter, resolved_annotations)
         resolved, has_value = _resolve_parameter_value(
             parameter,
             context,
-            _resolved_parameter_annotation(parameter, resolved_annotations),
+            annotation,
         )
         if not has_value:
             if parameter.default is not inspect.Parameter.empty:
                 continue
             missing_required.append(parameter.name)
             continue
+
+        if isinstance(resolved, dict) and isinstance(annotation, type) and issubclass(annotation, pydantic.BaseModel):
+            resolved = annotation(**resolved)
 
         if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             args.append(resolved)
