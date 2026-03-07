@@ -44,6 +44,13 @@ class InlineMessageButton(InlineKeyboardButton):
     type: str = "message"
 
 
+class InlineOpenAppButton(InlineKeyboardButton):
+    type: str = "open_app"
+    web_app: Optional[str] = None
+    contact_id: Optional[int] = None
+    payload: Optional[str] = None
+
+
 InlineButton = Union[
     InlineCallbackButton,
     InlineLinkButton,
@@ -51,6 +58,7 @@ InlineButton = Union[
     InlineRequestGeoLocationButton,
     InlineChatButton,
     InlineMessageButton,
+    InlineOpenAppButton,
 ]
 
 

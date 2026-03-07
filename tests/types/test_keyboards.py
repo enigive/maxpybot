@@ -2,6 +2,7 @@ from maxpybot.types import (
     InlineCallbackButton,
     InlineChatButton,
     InlineKeyboard,
+    InlineOpenAppButton,
     ReplyContactButton,
     ReplyGeoLocationButton,
     ReplyKeyboard,
@@ -13,6 +14,7 @@ def test_inline_keyboard_to_attachment_request() -> None:
     kb = InlineKeyboard.from_rows(
         InlineKeyboard.row(InlineCallbackButton(text="OK", payload="ok")),
         InlineKeyboard.row(InlineChatButton(text="Discuss", chat_title="T")),
+        InlineKeyboard.row(InlineOpenAppButton(text="Open App", web_app="myapp", payload="p")),
     )
     assert kb.to_attachment_request() == {
         "type": "inline_keyboard",
@@ -20,6 +22,7 @@ def test_inline_keyboard_to_attachment_request() -> None:
             "buttons": [
                 [{"type": "callback", "text": "OK", "payload": "ok"}],
                 [{"type": "chat", "text": "Discuss", "chat_title": "T"}],
+                [{"type": "open_app", "text": "Open App", "web_app": "myapp", "payload": "p"}],
             ]
         },
     }
