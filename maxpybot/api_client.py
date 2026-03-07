@@ -560,7 +560,12 @@ class MaxBot:
         forward_message_id: Optional[str],
     ) -> Dict[str, Any]:
         link = self._build_message_link(reply_to_message_id=reply_to_message_id, forward_message_id=forward_message_id)
-        body: Dict[str, Any] = {"text": text, "attachments": attachments, "link": link}
+        body: Dict[str, Any] = {
+            "text": text,
+            "attachments": attachments,
+        }
+        if link:
+            body["link"] = link
         if not notify:
             body["notify"] = False
         if format is not None:

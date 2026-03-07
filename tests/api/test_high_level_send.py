@@ -47,7 +47,37 @@ async def test_maxbot_send_message_builds_body_without_json() -> None:
 
     assert captured["path"] == "messages"
     assert captured["params"] == {"chat_id": 200}
-    assert captured["json_body"] == {"text": "hello", "attachments": [], "link": {}}
+    assert captured["json_body"] == {"text": "hello", "attachments": []}
+
+
+def test_build_new_message_body_without_link() -> None:
+    bot = MaxBot("token")
+
+    body = bot._build_new_message_body(
+        text="hello",
+        attachments=[],
+        notify=True,
+        format=None,
+        reply_to_message_id=None,
+        forward_message_id=None,
+    )
+
+    assert "link" not in body
+
+
+def test_build_new_message_body_with_reply_link() -> None:
+    bot = MaxBot("token")
+
+    body = bot._build_new_message_body(
+        text="reply",
+        attachments=[],
+        notify=True,
+        format=None,
+        reply_to_message_id="m-1",
+        forward_message_id=None,
+    )
+
+    assert body["link"] == {"type": "reply", "mid": "m-1"}
 
 
 @pytest.mark.asyncio
