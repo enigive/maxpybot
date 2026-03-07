@@ -304,10 +304,16 @@ def _extract_callback(update: Any) -> Optional[Callback]:
     callback = _coerce_model(raw, Callback)
     if callback is None:
         return None
-    if callback.message is None:
+    # Safely handle potential dict or foreign object from _coerce_model
+    if getattr(callback, "message", None) is None:
         message = _extract_message(update)
         if message is not None:
-            callback.message = message
+            try:
+                callback.message = message
+            except (AttributeError, TypeError):
+                # Cannot set attribute on dict or immutable object
+                if isinstance(callback, dict) and "message" not in callback:
+                    callback["message"] = message
     return callback
 
 
@@ -320,7 +326,13 @@ def _extract_chat_id(update: Any) -> Optional[int]:
 
     message = _extract_message(update)
     if message is not None:
-        return _to_int(getattr(message.chat, "chat_id", None))
+        chat = getattr(message, "chat", None)
+        if chat is not None:
+            return _to_int(getattr(chat, "chat_id", None))
+        if isinstance(message, dict):
+            chat_dict = message.get("chat")
+            if isinstance(chat_dict, dict):
+                return _to_int(chat_dict.get("chat_id"))
 
     chat = getattr(update, "chat", None)
     if isinstance(update, dict):
@@ -349,7 +361,10 @@ def _extract_user_id(update: Any) -> Optional[int]:
 
     message = _extract_message(update)
     if message is not None:
-        sender_dict = _as_dict(message.sender)
+        sender = getattr(message, "sender", None)
+        sender_dict = _as_dict(sender)
+        if not sender_dict and isinstance(message, dict):
+            sender_dict = _as_dict(message.get("sender"))
         if sender_dict:
             sender_id = _to_int(sender_dict.get("user_id"))
             if sender_id is not None:
@@ -357,7 +372,10 @@ def _extract_user_id(update: Any) -> Optional[int]:
 
     callback = _extract_callback(update)
     if callback is not None:
-        callback_user = _as_dict(callback.user)
+        user_field = getattr(callback, "user", None)
+        callback_user = _as_dict(user_field)
+        if not callback_user and isinstance(callback, dict):
+            callback_user = _as_dict(callback.get("user"))
         if callback_user:
             callback_user_id = _to_int(callback_user.get("user_id"))
             if callback_user_id is not None:
@@ -374,15 +392,15 @@ def _coerce_model(value: Any, klass: Any) -> Any:
         try:
             return klass.model_validate(value)
         except Exception:  # noqa: BLE001
-            return None
-    if hasattr(value, "model_dump"):
-        dumped = value.model_dump(by_alias=True)
-        if isinstance(dumped, dict):
-            try:
+            pass  # Fall through to return value
+    elif hasattr(value, "model_dump"):
+        try:
+            dumped = value.model_dump(by_alias=True)
+            if isinstance(dumped, dict):
                 return klass.model_validate(dumped)
-            except Exception:  # noqa: BLE001
-                return None
-    return None
+        except Exception:  # noqa: BLE001
+            pass  # Fall through to return value
+    return value
 
 
 def _as_dict(value: Any) -> Dict[str, Any]:
