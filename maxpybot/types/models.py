@@ -104,7 +104,7 @@ class Recipient(_Recipient):
 
 class MessageBody(_MessageBody):
     attachments: List[Any] = Field(default_factory=list)
-    text: Optional[str] = None
+    text: str = ""
 
 
 class Message(_Message):

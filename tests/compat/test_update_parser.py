@@ -86,7 +86,7 @@ def test_parse_message_created_update_without_text_or_attachments() -> None:
     body = _as_dict(message.get("body"))
 
     assert body.get("attachments") == []
-    assert body.get("text") is None
+    assert body.get("text") == ""
 
 
 def test_attachment_parser_mapping_uses_only_enum_types() -> None:
