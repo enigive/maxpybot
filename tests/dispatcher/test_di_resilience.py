@@ -70,7 +70,8 @@ async def test_di_resilience_to_foreign_model():
         return callback
 
     result = await invoke_handler(handler, context)
-    assert result is foreign_cb
+    # Foreign object with valid model_dump → coerced to proper Callback
+    assert isinstance(result, Callback)
     assert result.callback_id == "cb2"
 
 @pytest.mark.asyncio

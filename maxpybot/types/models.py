@@ -47,7 +47,14 @@ if TYPE_CHECKING:
 
 
 class User(_User):
-    """Public user DTO."""
+    """Public user DTO with lenient field types matching real API payloads."""
+
+    user_id: Union[int, str]          # API sends int, schema says str — accept both
+    username: Optional[str] = None    # may be absent
+    last_name: Optional[str] = None   # may be absent
+    first_name: Optional[str] = None  # may be absent
+    is_bot: Optional[bool] = None
+    last_activity_time: Optional[int] = None
 
 
 class AttachmentType(str, Enum):
