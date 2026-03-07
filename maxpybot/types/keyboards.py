@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 from .base import MaxBaseModel
 
@@ -13,27 +13,27 @@ class InlineKeyboardButton(MaxBaseModel):
 
 
 class InlineCallbackButton(InlineKeyboardButton):
-    type: str = "callback"
+    type: Literal["callback"] = "callback"
     payload: str = Field(...)
     intent: Optional[str] = None
 
 
 class InlineLinkButton(InlineKeyboardButton):
-    type: str = "link"
+    type: Literal["link"] = "link"
     url: str = Field(...)
 
 
 class InlineRequestContactButton(InlineKeyboardButton):
-    type: str = "request_contact"
+    type: Literal["request_contact"] = "request_contact"
 
 
 class InlineRequestGeoLocationButton(InlineKeyboardButton):
-    type: str = "request_geo_location"
+    type: Literal["request_geo_location"] = "request_geo_location"
     quick: Optional[bool] = None
 
 
 class InlineChatButton(InlineKeyboardButton):
-    type: str = "chat"
+    type: Literal["chat"] = "chat"
     chat_title: str = Field(...)
     chat_description: Optional[str] = None
     start_payload: Optional[str] = None
@@ -41,11 +41,11 @@ class InlineChatButton(InlineKeyboardButton):
 
 
 class InlineMessageButton(InlineKeyboardButton):
-    type: str = "message"
+    type: Literal["message"] = "message"
 
 
 class InlineOpenAppButton(InlineKeyboardButton):
-    type: str = "open_app"
+    type: Literal["open_app"] = "open_app"
     web_app: Optional[str] = None
     contact_id: Optional[int] = None
     payload: Optional[str] = None
@@ -91,17 +91,17 @@ class ReplyKeyboardButton(MaxBaseModel):
 
 
 class ReplyMessageButton(ReplyKeyboardButton):
-    type: str = "message"
+    type: Literal["message"] = "message"
     intent: Optional[str] = None
 
 
 class ReplyGeoLocationButton(ReplyKeyboardButton):
-    type: str = "user_geo_location"
+    type: Literal["user_geo_location"] = "user_geo_location"
     quick: Optional[bool] = None
 
 
 class ReplyContactButton(ReplyKeyboardButton):
-    type: str = "user_contact"
+    type: Literal["user_contact"] = "user_contact"
 
 
 ReplyButton = Union[ReplyMessageButton, ReplyGeoLocationButton, ReplyContactButton]
