@@ -71,7 +71,7 @@ async def invoke_handler(callback: Callable[..., Any], context: HandlerContext) 
             continue
 
         if isinstance(resolved, dict) and isinstance(annotation, type) and issubclass(annotation, pydantic.BaseModel):
-            resolved = annotation(**resolved)
+            resolved = _coerce_to_model(resolved, annotation)
 
         if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             args.append(resolved)
@@ -423,3 +423,19 @@ def _to_int(value: Any) -> Optional[int]:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _coerce_to_model(data: Dict[str, Any], klass: Any) -> Any:
+    """Convert a dict to a Pydantic model instance.
+
+    Strategy (never returns a plain dict):
+    1. Try ``model_validate`` — lenient Pydantic v2 validation.
+    2. If that raises, fall back to ``model_construct`` which skips
+       validation entirely but always produces a proper typed object.
+    """
+    try:
+        return klass.model_validate(data)
+    except Exception:  # noqa: BLE001
+        pass
+    # model_construct never raises — creates instance without validation
+    return klass.model_construct(**data)

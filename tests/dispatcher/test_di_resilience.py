@@ -35,10 +35,10 @@ async def test_di_resilience_to_validation_failure():
     async def handler(callback: Callback):
         return callback
 
-    # After fix: _coerce_model returns the dict instead of None.
+    # After fix: incomplete data → model_construct is used → always a typed object
     result = await invoke_handler(handler, context)
-    assert isinstance(result, dict)
-    assert result["callback_id"] == "cb1"
+    assert isinstance(result, Callback)
+    assert result.callback_id == "cb1"
 
 @pytest.mark.asyncio
 async def test_di_resilience_to_foreign_model():
