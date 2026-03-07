@@ -19,14 +19,14 @@ class DummyTransport:
 async def test_bots_api_get_my_info() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.bots._transport = dummy
+    bot.bots._transport = dummy  # type: ignore[assignment]
     
     info = await bot.bots.get_my_info()
     
     # Check if it's a BotInfo instance or a dict
     if isinstance(info, BotInfo):
         assert info.user_id == 123
-        assert info.name == "test_bot"
+        assert info.username == "test_bot"
     else:
         assert info["user_id"] == 123
         assert info["name"] == "test_bot"
@@ -38,13 +38,13 @@ async def test_bots_api_get_my_info() -> None:
 async def test_bots_api_edit_my_info_dict() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.bots._transport = dummy
+    bot.bots._transport = dummy  # type: ignore[assignment]
     
     patch = {"name": "new_name"}
     info = await bot.bots.edit_my_info(patch)
     
     if isinstance(info, BotInfo):
-        assert info.name == "test_bot"
+        assert info.username == "test_bot"
     else:
         assert info["name"] == "test_bot"
         
@@ -56,7 +56,7 @@ async def test_bots_api_edit_my_info_dict() -> None:
 async def test_bots_api_edit_my_info_schema() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.bots._transport = dummy
+    bot.bots._transport = dummy  # type: ignore[assignment]
     
     patch = BotPatchSchema(name="schema_name")
     await bot.bots.edit_my_info(patch)

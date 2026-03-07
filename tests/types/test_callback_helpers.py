@@ -32,7 +32,7 @@ async def test_callback_answer_uses_callback_id_and_builds_payload() -> None:
     class DummyBot:
         messages = DummyMessages()
 
-    cb.bot = DummyBot()
+    cb.bot = DummyBot()  # type: ignore[assignment]
     result = await cb.answer(notification="ok")
 
     assert result == {"success": True}
@@ -64,7 +64,7 @@ async def test_callback_answer_rejects_empty_notification() -> None:
     class DummyBot:
         messages = DummyMessages()
 
-    cb.bot = DummyBot()
+    cb.bot = DummyBot()  # type: ignore[assignment]
     with pytest.raises(ValueError, match="notification is empty"):
         await cb.answer(notification="  ")
 

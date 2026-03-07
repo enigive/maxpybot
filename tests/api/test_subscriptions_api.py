@@ -15,7 +15,7 @@ class DummyTransport:
 async def test_subscriptions_api_get_subscriptions() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.subscriptions._transport = dummy
+    bot.subscriptions._transport = dummy  # type: ignore[assignment]
     
     res = await bot.subscriptions.get_subscriptions()
     assert dummy.calls[0][0] == "GET"
@@ -25,7 +25,7 @@ async def test_subscriptions_api_get_subscriptions() -> None:
 async def test_subscriptions_api_subscribe() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.subscriptions._transport = dummy
+    bot.subscriptions._transport = dummy  # type: ignore[assignment]
     
     await bot.subscriptions.subscribe("https://test.com", update_types=["message_created"], secret="s")
     assert dummy.calls[0][0] == "POST"
@@ -38,7 +38,7 @@ async def test_subscriptions_api_subscribe() -> None:
 async def test_subscriptions_api_unsubscribe() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.subscriptions._transport = dummy
+    bot.subscriptions._transport = dummy  # type: ignore[assignment]
     
     await bot.subscriptions.unsubscribe("https://test.com")
     assert dummy.calls[0][0] == "DELETE"
@@ -49,7 +49,7 @@ async def test_subscriptions_api_unsubscribe() -> None:
 async def test_subscriptions_api_unsubscribe_all() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
-    bot.subscriptions._transport = dummy
+    bot.subscriptions._transport = dummy  # type: ignore[assignment]
     
     results = await bot.subscriptions.unsubscribe_all()
     # 1 GET + 2 DELETE

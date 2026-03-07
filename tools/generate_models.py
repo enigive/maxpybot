@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import yaml
+import yaml  # type: ignore[import]
 
 
 DEFAULT_SCHEMA_PATH = Path("vendor/max_bot_api/schema.yaml")

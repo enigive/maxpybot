@@ -16,7 +16,7 @@ async def test_get_updates_timeout_returns_empty_page() -> None:
         async def request_json(self, *args, **kwargs):  # noqa: ANN002, ANN003
             raise TimeoutError("GET updates", "request timeout exceeded")
 
-    api._transport = DummyTransport()  # type: ignore[attr-defined]
+    api._transport = DummyTransport()  # type: ignore[assignment]
     response = await api.get_updates(marker=123, timeout_seconds=1, limit=1)
 
     assert response == {"updates": [], "marker": 123}
@@ -54,7 +54,7 @@ async def test_iter_updates_yields_parsed_updates() -> None:
             return response
 
     dummy = DummyTransport()
-    api._transport = dummy  # type: ignore[attr-defined]
+    api._transport = dummy  # type: ignore[assignment]
 
     updates = []
     async for update in api.iter_updates(marker=1):
@@ -87,7 +87,7 @@ async def test_maxbot_start_polling_uses_polling_runner(monkeypatch: pytest.Monk
     monkeypatch.setattr("maxpybot.dispatcher.polling.PollingRunner", DummyRunner)
 
     bot = MaxBot("token")
-    bot._transport = DummyTransport()  # type: ignore[attr-defined]
+    bot._transport = DummyTransport()  # type: ignore[assignment]
     router = Router()
 
     await bot.start_polling(router=router, marker=10, types=["message_created"])

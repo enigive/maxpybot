@@ -20,4 +20,4 @@ def test_request_options_defaults() -> None:
 
 def test_request_options_extra_forbid() -> None:
     with pytest.raises(ValueError):
-        RequestOptions(method="GET", path="me", extra_field="forbidden")
+        RequestOptions(method="GET", path="me", extra_field="forbidden")  # type: ignore[call-arg]

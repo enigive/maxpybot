@@ -21,7 +21,7 @@ async def test_unsubscribe_all_calls_unsubscribe_for_each_url() -> None:
         return {"success": True}
 
     api.get_subscriptions = fake_get_subscriptions  # type: ignore[method-assign]
-    api.unsubscribe = fake_unsubscribe  # type: ignore[method-assign]
+    api.unsubscribe = fake_unsubscribe  # type: ignore[assignment]
 
     result = await api.unsubscribe_all()
 

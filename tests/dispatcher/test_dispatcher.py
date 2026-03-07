@@ -1,5 +1,5 @@
 import ssl
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import pytest
 
@@ -233,7 +233,7 @@ async def test_polling_runner_dispatches_updates() -> None:
     async def on_message(update: Any) -> None:
         calls.append("ok")
 
-    runner = PollingRunner(api=FakeApi(), router=router)
+    runner = PollingRunner(api=FakeApi(), router=router)  # type: ignore[arg-type]
     await runner.run()
     assert calls == ["ok"]
     assert runner.running is False
@@ -709,7 +709,7 @@ async def test_polling_runner_lifecycle_hooks_and_stop() -> None:
             yield {"update_type": "message_created", "timestamp": 2, "message": {"body": {"text": "second"}}}
 
     router = Router()
-    runner = PollingRunner(api=FakeApi(), router=router)
+    runner = PollingRunner(api=FakeApi(), router=router)  # type: ignore[arg-type]
     lifecycle: List[str] = []
     handled_messages: List[str] = []
 
@@ -752,9 +752,9 @@ async def test_webhook_handler_success_and_errors() -> None:
         def __init__(
             self,
             method: str,
-            payload: Dict[str, Any] = None,
-            raises: Exception = None,
-            headers: Dict[str, str] = None,
+            payload: Optional[Dict[str, Any]] = None,
+            raises: Optional[Exception] = None,
+            headers: Optional[Dict[str, str]] = None,
             remote: str = "",
         ) -> None:
             self.method = method
@@ -768,14 +768,14 @@ async def test_webhook_handler_success_and_errors() -> None:
                 raise self._raises
             return self._payload
 
-    wrong_method_resp = await handler.handle(FakeRequest("GET"))
+    wrong_method_resp = await handler.handle(FakeRequest("GET"))  # type: ignore[arg-type]
     assert wrong_method_resp.status == 405
 
-    bad_json_resp = await handler.handle(FakeRequest("POST", raises=ValueError("bad json")))
+    bad_json_resp = await handler.handle(FakeRequest("POST", raises=ValueError("bad json")))  # type: ignore[arg-type]
     assert bad_json_resp.status == 400
 
     ok_resp = await handler.handle(
-        FakeRequest(
+        FakeRequest(  # type: ignore[arg-type]
             "POST",
             payload={
                 "update_type": "message_created",
@@ -803,8 +803,8 @@ async def test_webhook_handler_secret_validation() -> None:
         def __init__(
             self,
             method: str,
-            payload: Dict[str, Any] = None,
-            headers: Dict[str, str] = None,
+            payload: Optional[Dict[str, Any]] = None,
+            headers: Optional[Dict[str, str]] = None,
             remote: str = "",
         ) -> None:
             self.method = method
@@ -821,16 +821,16 @@ async def test_webhook_handler_secret_validation() -> None:
         "message": {"body": {"text": "hello"}},
     }
 
-    missing_secret_resp = await handler.handle(FakeRequest("POST", payload=payload))
+    missing_secret_resp = await handler.handle(FakeRequest("POST", payload=payload))  # type: ignore[arg-type]
     assert missing_secret_resp.status == 403
 
     wrong_secret_resp = await handler.handle(
-        FakeRequest("POST", payload=payload, headers={WEBHOOK_SECRET_HEADER: "wrong-secret"})
+        FakeRequest("POST", payload=payload, headers={WEBHOOK_SECRET_HEADER: "wrong-secret"})  # type: ignore[arg-type]
     )
     assert wrong_secret_resp.status == 403
 
     ok_resp = await handler.handle(
-        FakeRequest("POST", payload=payload, headers={WEBHOOK_SECRET_HEADER: "my-secret"})
+        FakeRequest("POST", payload=payload, headers={WEBHOOK_SECRET_HEADER: "my-secret"})  # type: ignore[arg-type]
     )
     assert ok_resp.status == 200
     assert calls == ["handled"]
@@ -866,16 +866,16 @@ async def test_webhook_handler_ip_network_allowlist() -> None:
         "message": {"body": {"text": "hello"}},
     }
 
-    denied_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="198.51.100.10"))
+    denied_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="198.51.100.10"))  # type: ignore[arg-type]
     assert denied_resp.status == 403
 
-    allowed_v4_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.15"))
+    allowed_v4_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.15"))  # type: ignore[arg-type]
     assert allowed_v4_resp.status == 200
 
-    allowed_v6_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="2001:db8::1"))
+    allowed_v6_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="2001:db8::1"))  # type: ignore[arg-type]
     assert allowed_v6_resp.status == 200
 
-    no_remote_resp = await handler.handle(FakeRequest("POST", payload=payload, remote=""))
+    no_remote_resp = await handler.handle(FakeRequest("POST", payload=payload, remote=""))  # type: ignore[arg-type]
     assert no_remote_resp.status == 403
 
     assert calls == ["handled", "handled"]
@@ -908,10 +908,10 @@ async def test_webhook_handler_single_ip_allowlist_value() -> None:
         "message": {"body": {"text": "hello"}},
     }
 
-    allowed_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.55"))
+    allowed_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.55"))  # type: ignore[arg-type]
     assert allowed_resp.status == 200
 
-    denied_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.56"))
+    denied_resp = await handler.handle(FakeRequest("POST", payload=payload, remote="203.0.113.56"))  # type: ignore[arg-type]
     assert denied_resp.status == 403
 
     assert calls == ["handled"]
@@ -1005,7 +1005,7 @@ async def test_webhook_handler_retries_processing_and_updates_metrics(monkeypatc
                 "message": {"body": {"text": "hello"}},
             }
 
-    response = await handler.handle(FakeRequest())
+    response = await handler.handle(FakeRequest())  # type: ignore[arg-type]
 
     assert response.status == 200
     assert parse_calls["count"] == 2
@@ -1039,7 +1039,7 @@ async def test_webhook_handler_returns_500_after_retry_exhausted(monkeypatch: py
                 "message": {"body": {"text": "hello"}},
             }
 
-    response = await handler.handle(FakeRequest())
+    response = await handler.handle(FakeRequest())  # type: ignore[arg-type]
 
     assert response.status == 500
     assert metrics.requests_total == 1
@@ -1073,7 +1073,7 @@ async def test_webhook_handler_metrics_for_secret_and_ip_rejection() -> None:
             }
 
     wrong_secret_resp = await handler.handle(
-        FakeRequest(
+        FakeRequest(  # type: ignore[arg-type]
             headers={WEBHOOK_SECRET_HEADER: "wrong-secret"},
             remote="203.0.113.10",
         )
@@ -1081,7 +1081,7 @@ async def test_webhook_handler_metrics_for_secret_and_ip_rejection() -> None:
     assert wrong_secret_resp.status == 403
 
     wrong_ip_resp = await handler.handle(
-        FakeRequest(
+        FakeRequest(  # type: ignore[arg-type]
             headers={WEBHOOK_SECRET_HEADER: "valid-secret"},
             remote="198.51.100.10",
         )

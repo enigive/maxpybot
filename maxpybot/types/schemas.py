@@ -42,11 +42,11 @@ class UserIdsSchema(MaxBaseModel):
 
 
 class NewMessageSchema(MaxBaseModel):
-    attachments: List[AttachmentRequest] = ...
+    attachments: Optional[List[AttachmentRequest]] = None
     format: Optional[Any] = None
     link: Optional[Dict[str, Any]] = None
     notify: Optional[bool] = None
-    text: str = ...
+    text: Optional[str] = None
 
 
 class CallbackAnswerSchema(MaxBaseModel):
