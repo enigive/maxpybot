@@ -6,7 +6,14 @@ from typing import Any, Dict, List, Optional
 from pydantic import model_validator
 
 from .base import MaxBaseModel
-from .generated.models import AttachmentRequest, BotCommand, ChatAdmin, SenderAction
+from .generated.models import (
+    AttachmentRequest,
+    BotCommand,
+    ChatAdmin,
+    NewMessageLink,
+    SenderAction,
+    TextFormat,
+)
 
 
 class BotPatchSchema(MaxBaseModel):
@@ -43,8 +50,8 @@ class UserIdsSchema(MaxBaseModel):
 
 class NewMessageSchema(MaxBaseModel):
     attachments: Optional[List[AttachmentRequest]] = None
-    format: Optional[Any] = None
-    link: Optional[Dict[str, Any]] = None
+    format: Optional[TextFormat] = None
+    link: Optional[NewMessageLink] = None
     notify: Optional[bool] = None
     text: Optional[str] = None
 

@@ -24,7 +24,7 @@ async def test_messages_api_send_message() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
     bot.messages._transport = dummy  # type: ignore[assignment]
-    body = {"text": "hello", "attachments": [], "link": {}}
+    body = {"text": "hello", "attachments": []}
     await bot.messages.send_message(body, chat_id=123)
     assert dummy.calls[0][0] == "POST"
     assert dummy.calls[0][1] == "messages"
@@ -35,10 +35,23 @@ async def test_messages_api_edit_message() -> None:
     bot = MaxBot("token")
     dummy = DummyTransport()
     bot.messages._transport = dummy  # type: ignore[assignment]
-    body = {"text": "edited", "attachments": [], "link": {}}
+    body = {"text": "edited", "attachments": [], "link": {"mid": "om1", "type": "reply"}}
     await bot.messages.edit_message("m1", body)
     assert dummy.calls[0][0] == "PUT"
     assert dummy.calls[0][2]["params"] == {"message_id": "m1"}
+    # Verify that attachments=[] is preserved in the payload (not excluded by exclude_none)
+    payload = dummy.calls[0][2]["json_body"]
+    assert payload["text"] == "edited"
+    assert payload["attachments"] == []
+    assert payload["link"] == {"mid": "om1", "type": "reply"}
+
+@pytest.mark.asyncio
+async def test_messages_api_edit_message_invalid_link() -> None:
+    bot = MaxBot("token")
+    from pydantic import ValidationError
+    body = {"text": "edited", "link": {"mid": "om1", "type": "invalid"}}
+    with pytest.raises(ValidationError):
+        await bot.messages.edit_message("m1", body)
 
 @pytest.mark.asyncio
 async def test_messages_api_delete_message() -> None:
