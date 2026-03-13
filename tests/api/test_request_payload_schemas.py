@@ -86,7 +86,6 @@ async def test_messages_request_methods_accept_schema_payloads() -> None:
 
     body = NewMessageSchema(
         attachments=[AttachmentRequest(type="image")],
-        link={},
         text="hello",
     )
 
@@ -94,7 +93,6 @@ async def test_messages_request_methods_accept_schema_payloads() -> None:
     assert captured["params"] == {"chat_id": 200}
     assert captured["json_body"] == {
         "attachments": [{"type": "image"}],
-        "link": {},
         "text": "hello",
     }
 
@@ -102,7 +100,6 @@ async def test_messages_request_methods_accept_schema_payloads() -> None:
     assert captured["params"] == {"message_id": "m-2"}
     assert captured["json_body"] == {
         "attachments": [{"type": "image"}],
-        "link": {},
         "text": "hello",
     }
 
