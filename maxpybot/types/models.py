@@ -161,6 +161,31 @@ class Message(_Message):
             reply_keyboard=reply_keyboard,
         )
 
+    async def edit(
+        self,
+        text: str = "",
+        format: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+    ) -> Any:
+        if self.bot is None:
+            raise RuntimeError("bot instance is not available in this message")
+        # Fallback text if empty
+        if not text and not inline_keyboard and hasattr(self.body, "text"):
+            text = self.body.text
+
+        return await self.bot.edit_message(
+            message_id=self.body.mid,
+            text=text,
+            format=format,
+            inline_keyboard=inline_keyboard,
+        )
+
+    async def edit_text(self, text: str, format: Optional[str] = None, inline_keyboard: Optional["InlineKeyboard"] = None) -> Any:
+        return await self.edit(text=text, format=format, inline_keyboard=inline_keyboard)
+
+    async def edit_keyboard(self, inline_keyboard: "InlineKeyboard") -> Any:
+        return await self.edit(text=self.body.text if hasattr(self.body, "text") else "", inline_keyboard=inline_keyboard)
+
     async def answer_image(
         self,
         file_path: Optional[str] = None,
@@ -393,6 +418,22 @@ class Callback(_Callback):
             callback_id=self.callback_id,
             callback={"notification": notification_text},
         )
+
+    async def edit(
+        self,
+        text: str = "",
+        format: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+    ) -> Any:
+        if self.message is None:
+            raise RuntimeError("message is not available in this callback")
+        return await self.message.edit(text=text, format=format, inline_keyboard=inline_keyboard)
+
+    async def edit_text(self, text: str, format: Optional[str] = None, inline_keyboard: Optional["InlineKeyboard"] = None) -> Any:
+        return await self.edit(text=text, format=format, inline_keyboard=inline_keyboard)
+
+    async def edit_keyboard(self, inline_keyboard: "InlineKeyboard") -> Any:
+        return await self.edit(inline_keyboard=inline_keyboard)
 
 
 class BotInfo(_BotInfo):

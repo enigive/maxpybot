@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import quote
 
 from ..exceptions import APIError
 from ..types import CallbackAnswerSchema, NewMessageSchema, build_request_payload
 from .base import BaseAPIGroup
+
+logger = logging.getLogger(__name__)
 
 
 class MessagesAPI(BaseAPIGroup):
@@ -69,7 +72,11 @@ class MessagesAPI(BaseAPIGroup):
                 json_body=payload,
             )
 
-        return await self._retry_attachment_not_ready(_call)
+        try:
+            return await self._retry_attachment_not_ready(_call)
+        except Exception as exc:
+            logger.error(f"Failed to edit message {message_id}: {exc}")
+            raise
 
     async def delete_message(self, message_id: str) -> Any:
         return await self._request_model("SimpleQueryResult", "DELETE", "messages", params={"message_id": message_id})

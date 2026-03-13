@@ -277,6 +277,27 @@ class MaxBot:
         )
         return await self.messages.send_message(body=body, chat_id=chat_id, user_id=user_id)
 
+    async def edit_message(
+        self,
+        message_id: str,
+        *,
+        text: str = "",
+        format: Optional[str] = None,
+        inline_keyboard: Optional["InlineKeyboard"] = None,
+    ) -> Any:
+        attachments: List[Dict[str, Any]] = []
+        if inline_keyboard is not None:
+            attachments.extend(self._build_keyboard_attachments(inline_keyboard=inline_keyboard, reply_keyboard=None))
+        body = self._build_new_message_body(
+            text=text,
+            attachments=attachments,
+            notify=True,
+            format=format,
+            reply_to_message_id=None,
+            forward_message_id=None,
+        )
+        return await self.messages.edit_message(message_id=message_id, body=body)
+
     async def send_image(
         self,
         *,

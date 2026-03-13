@@ -50,6 +50,19 @@ async def test_maxbot_send_message_builds_body_without_json() -> None:
     assert captured["json_body"] == {"text": "hello", "attachments": []}
 
 
+@pytest.mark.asyncio
+async def test_maxbot_edit_message_builds_body() -> None:
+    bot = MaxBot("token")
+    captured = _bind_capture_request_model(bot)
+
+    await bot.edit_message(message_id="m123", text="updated")
+
+    assert captured["method"] == "PUT"
+    assert captured["path"] == "messages"
+    assert captured["params"] == {"message_id": "m123"}
+    assert captured["json_body"] == {"text": "updated", "attachments": []}
+
+
 def test_build_new_message_body_without_link() -> None:
     bot = MaxBot("token")
 
